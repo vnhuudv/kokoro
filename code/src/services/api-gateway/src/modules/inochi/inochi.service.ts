@@ -95,16 +95,20 @@ export class InochiService {
     );
 
     const { rows: offsetRows } = await this.pool.query<{
-      id: string; kg_co2e: string; provider: string; cert_id: string;
-      cost_usd: string; purchased_at: string; covers_from: string;
-      covers_to: string; notes: string;
+      id: string; kg_co2e: string; provider: string; cert_id: string | null;
+      cost_usd: string | null; purchased_at: string; covers_from: string;
+      covers_to: string; notes: string | null; covers_period: boolean;
     }>(
       `SELECT id, kg_co2e, provider, cert_id, cost_usd,
-              purchased_at::text, covers_from::text, covers_to::text, notes
+              to_char(purchased_at, 'YYYY-MM-DD') AS purchased_at,
+              to_char(covers_from,  'YYYY-MM-DD') AS covers_from,
+              to_char(covers_to,    'YYYY-MM-DD') AS covers_to,
+              notes,
+              (covers_from <= $2::date AND covers_to >= $2::date) AS covers_period
        FROM carbon_offsets
        WHERE tenant_id = $1
        ORDER BY purchased_at DESC`,
-      [DEFAULT_TENANT],
+      [DEFAULT_TENANT, periodDate],
     );
 
     const total_kg_co2e = usageRows.reduce((sum, r) => {
@@ -114,21 +118,8 @@ export class InochiService {
       (sum, r) => sum + Number(r.input_tokens) + Number(r.output_tokens), 0,
     );
 
-    const offsets: OffsetRecord[] = offsetRows.map(r => ({
-      id: r.id,
-      kg_co2e: Number(r.kg_co2e),
-      provider: r.provider,
-      cert_id: r.cert_id ?? null,
-      cost_usd: r.cost_usd ? Number(r.cost_usd) : null,
-      purchased_at: r.purchased_at,
-      covers_from: r.covers_from,
-      covers_to: r.covers_to,
-      notes: r.notes ?? null,
-    }));
-
-    const offset_covered = offsets.some(
-      o => o.covers_from <= `${periodMonth}-01` && o.covers_to >= `${periodMonth}-01`,
-    );
+    const offsets: OffsetRecord[] = offsetRows.map(r => this.mapOffset(r));
+    const offset_covered = offsetRows.some(r => r.covers_period);
 
     return {
       period_month: periodMonth,
@@ -163,33 +154,27 @@ export class InochiService {
   }
 
   async listOffsets(): Promise<OffsetRecord[]> {
-    const { rows } = await this.pool.query(
+    const { rows } = await this.pool.query<{
+      id: string; kg_co2e: string; provider: string; cert_id: string | null;
+      cost_usd: string | null; purchased_at: string; covers_from: string;
+      covers_to: string; notes: string | null;
+    }>(
       `SELECT id, kg_co2e, provider, cert_id, cost_usd,
-              purchased_at::text, covers_from::text, covers_to::text, notes
+              to_char(purchased_at, 'YYYY-MM-DD') AS purchased_at,
+              to_char(covers_from,  'YYYY-MM-DD') AS covers_from,
+              to_char(covers_to,    'YYYY-MM-DD') AS covers_to,
+              notes
        FROM carbon_offsets WHERE tenant_id = $1 ORDER BY purchased_at DESC`,
       [DEFAULT_TENANT],
     );
-    return rows.map(r => ({
-      id: r.id,
-      kg_co2e: Number(r.kg_co2e),
-      provider: r.provider,
-      cert_id: r.cert_id ?? null,
-      cost_usd: r.cost_usd ? Number(r.cost_usd) : null,
-      purchased_at: r.purchased_at,
-      covers_from: r.covers_from,
-      covers_to: r.covers_to,
-      notes: r.notes ?? null,
-    }));
+    return rows.map(r => this.mapOffset(r));
   }
 
-  private async getOffsetById(id: string): Promise<OffsetRecord> {
-    const { rows } = await this.pool.query(
-      `SELECT id, kg_co2e, provider, cert_id, cost_usd,
-              purchased_at::text, covers_from::text, covers_to::text, notes
-       FROM carbon_offsets WHERE id = $1`,
-      [id],
-    );
-    const r = rows[0];
+  private mapOffset(r: {
+    id: string; kg_co2e: string; provider: string; cert_id: string | null;
+    cost_usd: string | null; purchased_at: string; covers_from: string;
+    covers_to: string; notes: string | null;
+  }): OffsetRecord {
     return {
       id: r.id,
       kg_co2e: Number(r.kg_co2e),
@@ -201,5 +186,24 @@ export class InochiService {
       covers_to: r.covers_to,
       notes: r.notes ?? null,
     };
+  }
+
+  private async getOffsetById(id: string): Promise<OffsetRecord> {
+    const { rows } = await this.pool.query<{
+      id: string; kg_co2e: string; provider: string; cert_id: string | null;
+      cost_usd: string | null; purchased_at: string; covers_from: string;
+      covers_to: string; notes: string | null;
+    }>(
+      `SELECT id, kg_co2e, provider, cert_id, cost_usd,
+              to_char(purchased_at, 'YYYY-MM-DD') AS purchased_at,
+              to_char(covers_from,  'YYYY-MM-DD') AS covers_from,
+              to_char(covers_to,    'YYYY-MM-DD') AS covers_to,
+              notes
+       FROM carbon_offsets WHERE id = $1`,
+      [id],
+    );
+    const r = rows[0];
+    if (!r) throw new Error(`Offset not found: ${id}`);
+    return this.mapOffset(r);
   }
 }
