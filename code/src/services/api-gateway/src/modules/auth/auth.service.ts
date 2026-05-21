@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Pool } from 'pg';
 import { DB_POOL } from '../database/database.module';
@@ -9,6 +9,8 @@ const SLACK_TOKEN_URL     = 'https://slack.com/api/oauth.v2.access';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly jwtService: JwtService,
     @Inject(DB_POOL) private readonly pool: Pool,
@@ -44,7 +46,8 @@ export class AuthService {
     };
 
     if (!data.ok || !data.authed_user?.id) {
-      throw new Error(`Slack OAuth failed: ${data.error ?? 'unknown_error'}`);
+      this.logger.error(`Slack OAuth failed: ${data.error ?? 'unknown_error'}`);
+      throw new Error('Slack authentication failed');
     }
 
     const slackUserId = data.authed_user.id;
@@ -57,7 +60,8 @@ export class AuthService {
     );
 
     if (rows.length === 0) {
-      throw new Error(`No active user found for Slack ID ${slackUserId}`);
+      this.logger.warn('No active user found for Slack ID (user not in users table or opted out)');
+      throw new Error('User not authorized');
     }
 
     const payload: AuthUser = {
