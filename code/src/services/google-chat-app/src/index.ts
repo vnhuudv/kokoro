@@ -73,22 +73,35 @@ app.post('/webhook', async (req: Request, res: Response) => {
 
   logRequest('webhook.received', { type: eventType });
 
-  // ── SLASH_COMMAND (Workspace Add-on) ────────────────────────
+  // ── SLASH_COMMAND ────────────────────────────────────────────
   if (eventType === 'SLASH_COMMAND') {
-    // renderActions.action.hostAppAction is the Workspace Add-on response format for Chat
-    res.json({
-      renderActions: {
-        action: {
-          hostAppAction: {
-            chatAction: {
-              createMessageAction: {
-                message: { text: 'Kokoro is working...' },
-              },
-            },
-          },
-        },
-      },
-    });
+    const payload = chat.appCommandPayload ?? {};
+    const draft = (payload.message?.argumentText ?? payload.message?.text ?? '').trim();
+    const spaceName: string = payload.space?.name ?? '';
+    const senderName: string = chat.user?.name ?? event.user?.name ?? '';
+
+    res.json({});
+
+    const card = await handleSlashCommand(draft);
+
+    if (!chatClient) {
+      logRequest('slash.no_chat_client', { space: spaceName });
+      return;
+    }
+    if (!spaceName || !senderName) {
+      logRequest('slash.missing_context', { spaceName, senderName });
+      return;
+    }
+
+    try {
+      await chatClient.spaces.messages.create({
+        parent: spaceName,
+        requestBody: { ...card, privateMessageViewer: { name: senderName } },
+      });
+      logRequest('slash.posted', { space: spaceName });
+    } catch (err) {
+      logRequest('slash.post_failed', { error: String(err) });
+    }
     return;
   }
 
