@@ -3,10 +3,16 @@ import { InochiService } from './inochi.service';
 import { InochiSyncJob } from './inochi-sync.job';
 import { CreateOffsetDto } from './inochi.types';
 
+/** Placeholder until JWT auth provides authenticated user context. */
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 function currentMonth(): string {
   return new Date().toISOString().slice(0, 7);
+}
+
+function lastMonthFirstDay(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
 }
 
 @Controller('inochi')
@@ -48,10 +54,12 @@ export class InochiController {
   @Post('sync')
   @HttpCode(200)
   async triggerSync() {
-    const now = new Date();
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const periodDate = lastMonthDate.toISOString().slice(0, 10);
-    const result = await this.syncJob.syncEstimates(periodDate);
-    return { ok: true, period: periodDate, ...result };
+    const periodDate = lastMonthFirstDay();
+    try {
+      const result = await this.syncJob.syncEstimates(periodDate);
+      return { ok: true, period: periodDate, ...result };
+    } catch (err) {
+      return { ok: false, period: periodDate, error: String(err) };
+    }
   }
 }
