@@ -1,0 +1,35 @@
+import { Controller, Get, Query } from '@nestjs/common';
+import { DashboardService } from './dashboard.service';
+
+@Controller('dashboard')
+export class DashboardController {
+  constructor(private readonly dashboardService: DashboardService) {}
+
+  @Get('team')
+  getTeam(@Query('tenant_id') tenantId = 'default') {
+    return this.dashboardService.getTeamMetrics(tenantId);
+  }
+
+  @Get('trend')
+  getTrend(@Query('tenant_id') tenantId = 'default') {
+    return this.dashboardService.getTrend(tenantId);
+  }
+
+  @Get('cases')
+  getCases(
+    @Query('tenant_id') tenantId = 'default',
+    @Query('limit') limit = 10,
+  ) {
+    return this.dashboardService.getRecentCases(tenantId, Number(limit));
+  }
+
+  @Get('personal')
+  getPersonal(@Query('user_id') userId = 'demo') {
+    return this.dashboardService.getPersonalMetrics(userId);
+  }
+
+  @Get('public')
+  getPublic() {
+    return this.dashboardService.getPublicSummary();
+  }
+}

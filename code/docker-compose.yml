@@ -1,0 +1,163 @@
+services:
+  # ── Infrastructure ──────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: kokoro
+      POSTGRES_PASSWORD: kokoro
+      POSTGRES_DB: kokoro
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kokoro -d kokoro"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok > /dev/tcp/localhost/2181 && echo ok || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "29092:29092"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # ── Backend Services ─────────────────────────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/services/api-gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://kokoro:kokoro@postgres:5432/kokoro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src/services/api-gateway/src:/app/src
+
+  slack-app:
+    build:
+      context: .
+      dockerfile: src/services/slack-app/Dockerfile
+      target: development
+    env_file: .env
+    depends_on:
+      api-gateway:
+        condition: service_started
+    volumes:
+      - ./src/services/slack-app/src:/app/src
+
+  google-chat-app:
+    build:
+      context: .
+      dockerfile: src/services/google-chat-app/Dockerfile
+      target: development
+    ports:
+      - "8004:8004"
+    env_file: .env
+    environment:
+      PORT: "8004"
+    depends_on:
+      - annotation-pipeline
+    volumes:
+      - ./src/services/google-chat-app/src:/app/src
+
+  annotation-pipeline:
+    build:
+      context: .
+      dockerfile: src/services/annotation-pipeline/Dockerfile
+    ports:
+      - "8001:8001"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://kokoro:kokoro@postgres:5432/kokoro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      llm-gateway:
+        condition: service_started
+    volumes:
+      - ./src/services/annotation-pipeline/app:/app/app
+      - ./src/services/python_shared:/app/python_shared
+
+  llm-gateway:
+    build:
+      context: .
+      dockerfile: src/services/llm-gateway/Dockerfile
+    ports:
+      - "8002:8002"
+    env_file: .env
+    volumes:
+      - ./src/services/llm-gateway/app:/app/app
+      - ./src/services/python_shared:/app/python_shared
+
+  feedback-learner:
+    build:
+      context: .
+      dockerfile: src/services/feedback-learner/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://kokoro:kokoro@postgres:5432/kokoro
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./src/services/feedback-learner/app:/app/app
+      - ./src/services/python_shared:/app/python_shared
+
+  # ── Frontend ─────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: src/web/dashboard/Dockerfile
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres_data:

@@ -1,0 +1,19 @@
+{
+  "name": "kokoro",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "src/packages/shared",
+    "src/services/slack-app",
+    "src/services/api-gateway",
+    "src/services/google-chat-app",
+    "src/web/dashboard"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
