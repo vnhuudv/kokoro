@@ -1,5 +1,5 @@
 // code/src/web/dashboard/src/pages/CarbonView.tsx
-import { useFetch } from '../hooks/useDashboard';
+import { useInochiFetch } from '../hooks/useDashboard';
 
 interface ToolBreakdown {
   tool: string;
@@ -35,7 +35,7 @@ const card: React.CSSProperties = {
 };
 
 export function CarbonView() {
-  const { data, loading } = useFetch<PersonalCarbonSummary>('/inochi/carbon/me');
+  const { data, loading } = useInochiFetch<PersonalCarbonSummary>('/carbon/me');
 
   if (loading) return <div style={{ padding: 40, color: '#64748b' }}>Loading…</div>;
   if (!data)   return <div style={{ padding: 40, color: '#94a3b8' }}>No carbon data yet.</div>;
