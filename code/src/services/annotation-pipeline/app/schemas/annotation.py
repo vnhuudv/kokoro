@@ -8,6 +8,7 @@ class AnnotationRequest(BaseModel):
     source_language: Language
     target_language: Language
     redacted_text: str
+    slack_user_id: str | None = None
 
 
 class AnnotationResponse(BaseModel):
