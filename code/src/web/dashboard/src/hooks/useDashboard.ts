@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getToken } from './useAuth';
 
 const API_BASES: Record<string, string> = {
   dashboard: 'http://localhost:3000/api/dashboard',
@@ -12,8 +13,15 @@ function makeUseFetch(base: string) {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-      fetch(`${base}${path}`)
-        .then(r => r.json())
+      const token = getToken();
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      fetch(`${base}${path}`, { headers })
+        .then(r => {
+          if (r.status === 401) throw new Error('Unauthorized');
+          return r.json();
+        })
         .then(setData)
         .catch(e => setError(String(e)))
         .finally(() => setLoading(false));
