@@ -53,7 +53,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export function AdminCarbonView() {
-  const { data, loading } = useInochiFetch<CompanyCarbonSummary>('/carbon/company');
+  const { data, loading, error } = useInochiFetch<CompanyCarbonSummary>('/carbon/company');
   const { data: offsets, loading: offsetLoading } = useInochiFetch<OffsetRecord[]>('/offsets');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -61,6 +61,7 @@ export function AdminCarbonView() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (loading) return <div style={{ padding: 40, color: '#64748b' }}>Loading…</div>;
+  if (error) return <div style={{ padding: 40, color: '#ef4444' }}>Failed to load carbon data.</div>;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,6 +146,7 @@ export function AdminCarbonView() {
                   value={form[field]}
                   onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
                   required={required}
+                  disabled={submitting}
                   style={inputStyle}
                 />
               </label>
@@ -154,6 +156,7 @@ export function AdminCarbonView() {
               <select
                 value={form.provider}
                 onChange={e => setForm(f => ({ ...f, provider: e.target.value }))}
+                disabled={submitting}
                 style={inputStyle}
               >
                 <option value="gold_standard">Gold Standard</option>
@@ -183,7 +186,7 @@ export function AdminCarbonView() {
             padding: '12px 0', borderBottom: '1px solid #f1f5f9', fontSize: 14,
           }}>
             <div>
-              <span style={{ color: '#334155', fontWeight: 600 }}>{o.kg_co2e} kg CO₂e</span>
+              <span style={{ color: '#334155', fontWeight: 600 }}>{Number(o.kg_co2e).toFixed(2)} kg CO₂e</span>
               {o.cert_id && <span style={{ color: '#94a3b8', marginLeft: 8 }}>{o.provider} #{o.cert_id}</span>}
             </div>
             <div style={{ color: '#94a3b8', fontSize: 12 }}>
