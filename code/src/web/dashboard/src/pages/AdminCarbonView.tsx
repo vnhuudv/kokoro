@@ -107,10 +107,12 @@ export function AdminCarbonView() {
           <div style={{ textAlign: 'center', padding: '20px 12px' }}>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#059669' }}>{data.total_kg_co2e.toFixed(2)}</div>
             <div style={{ fontSize: 13, color: '#1e293b', marginTop: 6, fontWeight: 600 }}>kg CO₂e total</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>mixed sources</div>
           </div>
           <div style={{ textAlign: 'center', padding: '20px 12px', borderLeft: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9' }}>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#059669' }}>{(data.total_tokens / 1_000_000).toFixed(1)}M</div>
             <div style={{ fontSize: 13, color: '#1e293b', marginTop: 6, fontWeight: 600 }}>tokens this month</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>mixed sources</div>
           </div>
           <div style={{ textAlign: 'center', padding: '20px 12px' }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: data.offset_covered ? '#059669' : '#f59e0b' }}>
