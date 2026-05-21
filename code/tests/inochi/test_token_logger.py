@@ -1,14 +1,20 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @pytest.mark.asyncio
 async def test_log_tokens_writes_record():
     mock_conn = AsyncMock()
-    mock_pool = AsyncMock()
-    mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
-    mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
     mock_conn.fetchrow = AsyncMock(return_value={"user_id": "uid-123"})
+    mock_conn.execute = AsyncMock()
+
+    # Create async context manager for pool.acquire()
+    async_cm = MagicMock()
+    async_cm.__aenter__ = AsyncMock(return_value=mock_conn)
+    async_cm.__aexit__ = AsyncMock(return_value=False)
+
+    mock_pool = AsyncMock()
+    mock_pool.acquire = MagicMock(return_value=async_cm)
 
     with patch("app.pipeline.token_logger.get_pool", return_value=mock_pool):
         from app.pipeline.token_logger import log_tokens
@@ -24,6 +30,7 @@ async def test_log_tokens_writes_record():
     call_sql = mock_conn.execute.call_args[0][0]
     assert "ai_usage_logs" in call_sql
     assert "ON CONFLICT" in call_sql
+    assert "ai_usage_logs.input_tokens + EXCLUDED.input_tokens" in call_sql
 
 
 @pytest.mark.asyncio
@@ -43,10 +50,15 @@ async def test_log_tokens_skips_when_no_slack_user():
 @pytest.mark.asyncio
 async def test_log_tokens_skips_when_user_not_found():
     mock_conn = AsyncMock()
-    mock_pool = AsyncMock()
-    mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
-    mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
     mock_conn.fetchrow = AsyncMock(return_value=None)
+
+    # Create async context manager for pool.acquire()
+    async_cm = MagicMock()
+    async_cm.__aenter__ = AsyncMock(return_value=mock_conn)
+    async_cm.__aexit__ = AsyncMock(return_value=False)
+
+    mock_pool = AsyncMock()
+    mock_pool.acquire = MagicMock(return_value=async_cm)
 
     with patch("app.pipeline.token_logger.get_pool", return_value=mock_pool):
         from app.pipeline.token_logger import log_tokens

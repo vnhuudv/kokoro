@@ -29,7 +29,7 @@ async def log_tokens(
 
     try:
         pool = await get_pool()
-        async with await pool.acquire() as conn:
+        async with pool.acquire() as conn:
             user_row = await conn.fetchrow(
                 "SELECT user_id FROM users WHERE tenant_id = $1 AND slack_user_id = $2",
                 tenant_id,
