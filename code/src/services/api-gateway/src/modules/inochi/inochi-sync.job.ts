@@ -28,8 +28,8 @@ export class InochiSyncJob {
   @Cron('0 2 1 * *')
   async runMonthlySync(): Promise<void> {
     const now = new Date();
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const periodDate = lastMonthDate.toISOString().slice(0, 10);
+    const lastMonthFirstDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+    const periodDate = lastMonthFirstDay.toISOString().slice(0, 10);
     const periodMonth = periodDate.slice(0, 7);
 
     this.logger.log(`Running Inochi sync for period ${periodDate}`);
