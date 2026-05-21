@@ -22,6 +22,8 @@ interface CompanyCarbonSummary {
   offsets: OffsetRecord[];
 }
 
+const INOCHI_API = 'http://localhost:3000/api/inochi';
+
 const card: React.CSSProperties = {
   background: '#fff', borderRadius: 8, padding: '20px 24px',
   boxShadow: '0 1px 3px rgba(0,0,0,.06)', marginBottom: 16,
@@ -33,13 +35,13 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0', fontSize: 13, boxSizing: 'border-box',
 };
 
-const FORM_FIELDS: { field: string; label: string; required?: boolean }[] = [
-  { field: 'kg_co2e',      label: 'kg CO₂e covered',        required: true },
+const FORM_FIELDS: { field: string; label: string; required?: boolean; type?: string }[] = [
+  { field: 'kg_co2e',      label: 'kg CO₂e covered',          required: true,  type: 'number' },
   { field: 'cert_id',      label: 'Certificate ID' },
-  { field: 'cost_usd',     label: 'Cost (USD)' },
-  { field: 'purchased_at', label: 'Purchased (YYYY-MM-DD)',  required: true },
-  { field: 'covers_from',  label: 'Covers from (YYYY-MM-DD)', required: true },
-  { field: 'covers_to',    label: 'Covers to (YYYY-MM-DD)',  required: true },
+  { field: 'cost_usd',     label: 'Cost (USD)',                                 type: 'number' },
+  { field: 'purchased_at', label: 'Purchased (YYYY-MM-DD)',    required: true,  type: 'date' },
+  { field: 'covers_from',  label: 'Covers from (YYYY-MM-DD)',  required: true,  type: 'date' },
+  { field: 'covers_to',    label: 'Covers to (YYYY-MM-DD)',    required: true,  type: 'date' },
   { field: 'notes',        label: 'Notes' },
 ];
 
@@ -56,14 +58,16 @@ export function AdminCarbonView() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (loading) return <div style={{ padding: 40, color: '#64748b' }}>Loading…</div>;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setSubmitError(null);
     try {
-      await fetch('http://localhost:3000/api/inochi/offsets', {
+      const res = await fetch(`${INOCHI_API}/offsets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -77,9 +81,12 @@ export function AdminCarbonView() {
           notes: form.notes || undefined,
         }),
       });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
       setForm(EMPTY_FORM);
       setShowForm(false);
       window.location.reload();
+    } catch (err) {
+      setSubmitError(String(err));
     } finally {
       setSubmitting(false);
     }
@@ -128,10 +135,11 @@ export function AdminCarbonView() {
 
         {showForm && (
           <form onSubmit={handleSubmit} style={{ background: '#f8fafc', borderRadius: 8, padding: 16, marginBottom: 16, display: 'grid', gap: 10 }}>
-            {FORM_FIELDS.map(({ field, label, required }) => (
+            {FORM_FIELDS.map(({ field, label, required, type }) => (
               <label key={field} style={{ fontSize: 13, color: '#334155' }}>
                 {label}{required && <span style={{ color: '#ef4444' }}> *</span>}
                 <input
+                  type={type || 'text'}
                   value={form[field]}
                   onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
                   required={required}
@@ -139,6 +147,18 @@ export function AdminCarbonView() {
                 />
               </label>
             ))}
+            <label style={{ fontSize: 13, color: '#334155' }}>
+              Provider *
+              <select
+                value={form.provider}
+                onChange={e => setForm(f => ({ ...f, provider: e.target.value }))}
+                style={inputStyle}
+              >
+                <option value="gold_standard">Gold Standard</option>
+                <option value="verra_vcs">Verra VCS</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
             <button
               type="submit"
               disabled={submitting}
@@ -146,6 +166,9 @@ export function AdminCarbonView() {
             >
               {submitting ? 'Saving…' : 'Save offset record'}
             </button>
+            {submitError && (
+              <div style={{ color: '#ef4444', fontSize: 13, marginTop: 4 }}>{submitError}</div>
+            )}
           </form>
         )}
 
