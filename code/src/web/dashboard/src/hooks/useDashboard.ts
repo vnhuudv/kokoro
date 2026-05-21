@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getToken } from './useAuth';
+import { getToken, clearToken } from './useAuth';
 
 const API_BASES: Record<string, string> = {
   dashboard: 'http://localhost:3000/api/dashboard',
@@ -20,6 +20,7 @@ function makeUseFetch(base: string) {
       fetch(`${base}${path}`, { headers })
         .then(r => {
           if (r.status === 401) {
+            clearToken();
             window.location.href = '/login';
             throw new Error('Unauthorized');
           }
