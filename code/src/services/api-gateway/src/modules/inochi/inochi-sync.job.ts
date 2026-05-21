@@ -78,13 +78,14 @@ export class InochiSyncJob {
   }
 
   private async sendMonthlyDMs(periodMonth: string): Promise<void> {
-    const { rows: users } = await this.pool.query<{ user_id: string; slack_user_id: string }>(
+    const { rows: users } = await this.pool.query<{ user_id: string; slack_user_id: string | null }>(
       `SELECT user_id, slack_user_id FROM users
        WHERE tenant_id = $1 AND opted_out_at IS NULL`,
       [DEFAULT_TENANT],
     );
 
     for (const user of users) {
+      if (!user.slack_user_id) continue;
       try {
         const summary = await this.inochiService.getPersonalCarbon(user.user_id, periodMonth);
         const km = toKmEquivalent(summary.total_kg_co2e);
