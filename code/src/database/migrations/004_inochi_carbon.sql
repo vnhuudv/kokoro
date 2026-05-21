@@ -11,7 +11,9 @@ CREATE TABLE ai_usage_logs (
   input_tokens    INTEGER NOT NULL DEFAULT 0,
   output_tokens   INTEGER NOT NULL DEFAULT 0,
   period_month    DATE NOT NULL,
-  recorded_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+  recorded_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uq_ai_usage_logs_user_tool_period
+    UNIQUE (user_id, tenant_id, tool, source, period_month)
 );
 
 CREATE INDEX idx_ai_usage_logs_user_month  ON ai_usage_logs (user_id, period_month);
@@ -19,7 +21,7 @@ CREATE INDEX idx_ai_usage_logs_tenant_month ON ai_usage_logs (tenant_id, period_
 
 CREATE TABLE carbon_offsets (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id     UUID NOT NULL,
+  tenant_id     UUID NOT NULL REFERENCES tenants(tenant_id),
   kg_co2e       NUMERIC(10,3) NOT NULL,
   provider      TEXT NOT NULL,
   cert_id       TEXT,
@@ -32,7 +34,7 @@ CREATE TABLE carbon_offsets (
 );
 
 CREATE TABLE usage_estimates (
-  tenant_id                 UUID NOT NULL,
+  tenant_id                 UUID NOT NULL REFERENCES tenants(tenant_id),
   tool                      TEXT NOT NULL,
   tokens_per_seat_per_month INTEGER NOT NULL,
   notes                     TEXT,
@@ -44,4 +46,5 @@ CREATE TABLE usage_estimates (
 INSERT INTO usage_estimates (tenant_id, tool, tokens_per_seat_per_month, notes)
 VALUES
   ('a0000000-0000-0000-0000-000000000001', 'claude_web',        500000, 'Claude.ai Teams/Pro — conservative estimate'),
-  ('a0000000-0000-0000-0000-000000000001', 'gemini_workspace',  400000, 'Gemini for Google Workspace — conservative estimate');
+  ('a0000000-0000-0000-0000-000000000001', 'gemini_workspace',  400000, 'Gemini for Google Workspace — conservative estimate')
+ON CONFLICT (tenant_id, tool) DO NOTHING;
