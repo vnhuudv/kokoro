@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Nav } from './components/Nav';
 import { TeamView } from './pages/TeamView';
 import { PersonalView } from './pages/PersonalView';
@@ -9,10 +9,15 @@ import { LoginView } from './pages/LoginView';
 import { AuthCallback } from './pages/AuthCallback';
 import { useAuth } from './hooks/useAuth';
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
+function AuthLayout() {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <>{children}</>;
+  return (
+    <>
+      <Nav />
+      <Outlet />
+    </>
+  );
 }
 
 export default function App() {
@@ -21,18 +26,13 @@ export default function App() {
       <Routes>
         <Route path="/login"         element={<LoginView />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/*" element={
-          <RequireAuth>
-            <Nav />
-            <Routes>
-              <Route path="/"             element={<TeamView />} />
-              <Route path="/me"           element={<PersonalView />} />
-              <Route path="/public"       element={<PublicView />} />
-              <Route path="/carbon"       element={<CarbonView />} />
-              <Route path="/admin/carbon" element={<AdminCarbonView />} />
-            </Routes>
-          </RequireAuth>
-        } />
+        <Route element={<AuthLayout />}>
+          <Route path="/"             element={<TeamView />} />
+          <Route path="/me"           element={<PersonalView />} />
+          <Route path="/public"       element={<PublicView />} />
+          <Route path="/carbon"       element={<CarbonView />} />
+          <Route path="/admin/carbon" element={<AdminCarbonView />} />
+        </Route>
       </Routes>
     </div>
   );
