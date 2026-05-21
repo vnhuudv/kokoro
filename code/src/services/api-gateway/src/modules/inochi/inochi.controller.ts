@@ -1,20 +1,23 @@
-import { Controller, Get, Post, Body, Query, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
+import { JwtAuthGuard } from '../auth/jwt.guard';
 import { InochiService } from './inochi.service';
 import { InochiSyncJob } from './inochi-sync.job';
 import { CreateOffsetDto } from './inochi.types';
 
-/** Placeholder until JWT auth provides authenticated user context. */
-const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
-
-function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7);
-}
-
-function lastMonthFirstDay(): string {
+function currentMonthUTC(): string {
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+function lastMonthFirstDayUTC(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
+    .toISOString()
+    .slice(0, 10);
+}
+
+@UseGuards(JwtAuthGuard)
 @Controller('inochi')
 export class InochiController {
   constructor(
@@ -24,19 +27,19 @@ export class InochiController {
 
   @Get('carbon/me')
   getPersonalCarbon(
-    @Query('user_id') userId = DEMO_USER_ID,
-    @Query('month') month = currentMonth(),
+    @Req() req: Request,
+    @Query('month') month = currentMonthUTC(),
   ) {
-    return this.inochiService.getPersonalCarbon(userId, month);
+    return this.inochiService.getPersonalCarbon(req.user!.user_id, month);
   }
 
   @Get('carbon/me/history')
-  getPersonalHistory(@Query('user_id') userId = DEMO_USER_ID) {
-    return this.inochiService.getPersonalHistory(userId);
+  getPersonalHistory(@Req() req: Request) {
+    return this.inochiService.getPersonalHistory(req.user!.user_id);
   }
 
   @Get('carbon/company')
-  getCompanyCarbon(@Query('month') month = currentMonth()) {
+  getCompanyCarbon(@Query('month') month = currentMonthUTC()) {
     return this.inochiService.getCompanyCarbon(month);
   }
 
@@ -47,14 +50,14 @@ export class InochiController {
 
   @Post('offsets')
   @HttpCode(201)
-  createOffset(@Body() dto: CreateOffsetDto) {
-    return this.inochiService.createOffset(dto, DEMO_USER_ID);
+  createOffset(@Body() dto: CreateOffsetDto, @Req() req: Request) {
+    return this.inochiService.createOffset(dto, req.user!.user_id);
   }
 
   @Post('sync')
   @HttpCode(200)
   async triggerSync() {
-    const periodDate = lastMonthFirstDay();
+    const periodDate = lastMonthFirstDayUTC();
     try {
       const result = await this.syncJob.syncEstimates(periodDate);
       return { ok: true, period: periodDate, ...result };
