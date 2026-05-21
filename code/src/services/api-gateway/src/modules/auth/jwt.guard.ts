@@ -12,9 +12,14 @@ export class JwtAuthGuard implements CanActivate {
     const token = this.extractToken(req);
     if (!token) throw new UnauthorizedException('Missing token');
     try {
-      req.user = this.jwtService.verify<AuthUser>(token);
+      const payload = this.jwtService.verify<AuthUser>(token);
+      if (!payload.user_id || !payload.tenant_id || !payload.slack_user_id) {
+        throw new UnauthorizedException('Token missing required fields');
+      }
+      req.user = payload;
       return true;
-    } catch {
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
       throw new UnauthorizedException('Invalid token');
     }
   }

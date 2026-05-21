@@ -1,13 +1,12 @@
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
+import { JwtAuthGuard } from '../../src/services/api-gateway/src/modules/auth/jwt.guard';
 
 describe('JwtAuthGuard', () => {
   const SECRET = 'test-secret';
   const jwtService = new JwtService({ secret: SECRET });
 
   function makeGuard() {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { JwtAuthGuard } = require('../../src/services/api-gateway/src/modules/auth/jwt.guard');
     return new JwtAuthGuard(jwtService);
   }
 
@@ -42,6 +41,12 @@ describe('JwtAuthGuard', () => {
   it('throws UnauthorizedException for token signed with wrong secret', () => {
     const wrongService = new JwtService({ secret: 'wrong-secret' });
     const token = wrongService.sign({ user_id: 'u1' });
+    const guard = makeGuard();
+    expect(() => guard.canActivate(makeContext(`Bearer ${token}`))).toThrow(UnauthorizedException);
+  });
+
+  it('throws UnauthorizedException for token missing required fields', () => {
+    const token = jwtService.sign({ some_field: 'value' }, { secret: SECRET });
     const guard = makeGuard();
     expect(() => guard.canActivate(makeContext(`Bearer ${token}`))).toThrow(UnauthorizedException);
   });
