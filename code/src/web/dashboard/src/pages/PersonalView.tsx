@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useFetch } from '../hooks/useDashboard';
 
 interface PersonalMetrics {
@@ -28,12 +29,16 @@ function ProgressBar({ value }: { value: number }) {
 
 export function PersonalView() {
   const { data, loading } = useFetch<PersonalMetrics>('/personal');
+  const [showHistory, setShowHistory] = useState(false);
+
   if (loading) return <div style={{ padding: 40, color: '#64748b' }}>Loading…</div>;
 
-  const usageRate = data ? Math.round((data.suggestions_used / data.suggestions_total) * 100) : 0;
+  const usageRate = data && data.suggestions_total > 0
+    ? Math.round((data.suggestions_used / data.suggestions_total) * 100)
+    : 0;
 
   return (
-    <main style={{ padding: '32px 40px', background: '#f8fafc', minHeight: '100vh', maxWidth: 640 }}>
+    <main style={{ padding: '32px 40px', background: '#f8fafc', minHeight: '100vh', maxWidth: 640, margin: '0 auto' }}>
       <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#1e293b' }}>My Fluency</h1>
       <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 28 }}>Pilot Week 8</div>
 
@@ -42,7 +47,9 @@ export function PersonalView() {
         <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Fluency score</div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <span style={{ fontSize: 44, fontWeight: 700, color: '#1e293b' }}>{data?.fluency_score}%</span>
-          <span style={{ fontSize: 14, color: '#0ea5a0' }}>+{data?.fluency_delta}% from start</span>
+          {(data?.fluency_delta ?? 0) > 0 && (
+            <span style={{ fontSize: 14, color: '#0ea5a0' }}>+{data?.fluency_delta}% from start</span>
+          )}
         </div>
         <ProgressBar value={data?.fluency_score ?? 0} />
       </div>
@@ -64,14 +71,37 @@ export function PersonalView() {
       </div>
 
       {/* Patterns mastered */}
+      {(data?.patterns_mastered.length ?? 0) > 0 && (
+        <div style={{ ...card, borderLeft: 'none' }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Patterns I've mastered</div>
+          {(data?.patterns_mastered ?? []).map((p, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: 14, color: '#334155' }}>
+              <span style={{ color: '#0ea5a0', fontWeight: 700 }}>✓</span>
+              {p}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Annotation history */}
       <div style={{ ...card, borderLeft: 'none' }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Patterns I've mastered</div>
-        {(data?.patterns_mastered ?? []).map((p, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: 14, color: '#334155' }}>
-            <span style={{ color: '#0ea5a0', fontWeight: 700 }}>✓</span>
-            {p}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showHistory ? 16 : 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Annotation history</div>
+          <button
+            onClick={() => setShowHistory(h => !h)}
+            style={{ fontSize: 13, color: '#0ea5a0', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+          >
+            {showHistory ? 'Hide ▴' : 'View ▾'}
+          </button>
+        </div>
+        {showHistory && (
+          <div style={{ fontSize: 14, color: '#64748b', background: '#f8fafc', padding: '16px', borderRadius: 6, textAlign: 'center' }}>
+            Full annotation history will be available in the next release.
+            <div style={{ marginTop: 8, fontSize: 12, color: '#94a3b8' }}>
+              Your data is stored privately and not visible to team leads.
+            </div>
           </div>
-        ))}
+        )}
       </div>
     </main>
   );
