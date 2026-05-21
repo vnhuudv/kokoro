@@ -19,7 +19,10 @@ function makeUseFetch(base: string) {
 
       fetch(`${base}${path}`, { headers })
         .then(r => {
-          if (r.status === 401) throw new Error('Unauthorized');
+          if (r.status === 401) {
+            window.location.href = '/login';
+            throw new Error('Unauthorized');
+          }
           return r.json();
         })
         .then(setData)

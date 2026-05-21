@@ -14,7 +14,7 @@ export function AuthCallback() {
     } else {
       navigate('/login?error=auth_failed', { replace: true });
     }
-  }, []);
+  }, [params, navigate]);
 
   return (
     <div style={{ padding: 40, color: '#64748b', textAlign: 'center' }}>
