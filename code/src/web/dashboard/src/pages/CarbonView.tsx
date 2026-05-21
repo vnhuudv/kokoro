@@ -97,7 +97,7 @@ export function CarbonView() {
           <div style={{ fontSize: 14, color: '#94a3b8' }}>No tool usage recorded this month.</div>
         )}
         {data.tools.map((t, i) => (
-          <div key={i} style={{
+          <div key={`${t.tool}-${t.source}`} style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             padding: '12px 0', borderBottom: i < data.tools.length - 1 ? '1px solid #f1f5f9' : 'none',
             fontSize: 14,
