@@ -3,6 +3,7 @@ import { Nav } from './components/Nav';
 import { TeamView } from './pages/TeamView';
 import { PersonalView } from './pages/PersonalView';
 import { PublicView } from './pages/PublicView';
+import { CarbonView } from './pages/CarbonView';
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/"       element={<TeamView />} />
         <Route path="/me"     element={<PersonalView />} />
         <Route path="/public" element={<PublicView />} />
+        <Route path="/carbon" element={<CarbonView />} />
       </Routes>
     </div>
   );

@@ -11,17 +11,21 @@ const link: React.CSSProperties = {
 
 const activeLink: React.CSSProperties = {
   ...link,
-  background: '#f1f5f9',
+  background: '#f0fdfb',
   color: '#0ea5a0',
 };
 
 export function Nav() {
   return (
     <nav style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '12px 24px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
-      <span style={{ fontWeight: 700, color: '#0ea5a0', marginRight: 24, fontSize: 16 }}>Kokoro 心</span>
+      <div style={{ marginRight: 28 }}>
+        <span style={{ fontWeight: 800, color: '#0ea5a0', fontSize: 17 }}>Kokoro 心</span>
+        <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 10 }}>Cross-cultural fluency · Vnext Japan pilot</span>
+      </div>
       <NavLink to="/"       style={({ isActive }) => isActive ? activeLink : link}>Team</NavLink>
       <NavLink to="/me"     style={({ isActive }) => isActive ? activeLink : link}>My Fluency</NavLink>
       <NavLink to="/public" style={({ isActive }) => isActive ? activeLink : link}>Pilot Results</NavLink>
+      <NavLink to="/carbon" style={({ isActive }) => isActive ? activeLink : link}>Carbon 命</NavLink>
     </nav>
   );
 }
