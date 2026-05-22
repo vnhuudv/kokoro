@@ -1,7 +1,8 @@
 import json
 import logging
+from typing import Optional, Tuple
 import httpx
-from python_shared.types import IntentResult, Register, SuggestionChip
+from python_shared.types import IntentResult, LLMResponse, Register, SuggestionChip
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ def _fallback(register: Register) -> IntentResult:
     )
 
 
-async def extract_intent(text: str, register: Register, source_lang: str) -> IntentResult:
+async def extract_intent(text: str, register: Register, source_lang: str) -> Tuple[IntentResult, Optional[LLMResponse]]:
     prompt = (
         f"Source language: {source_lang}\n"
         f"Register detected: {register.value}\n"
@@ -66,9 +67,10 @@ async def extract_intent(text: str, register: Register, source_lang: str) -> Int
                 },
             )
             response.raise_for_status()
-            llm_text = response.json()["text"]
+            llm_data = response.json()
+            llm_response = LLMResponse(**llm_data)
 
-        data = json.loads(llm_text)
+        data = json.loads(llm_response.text)
         suggestions = [
             SuggestionChip(
                 label=s["label"],
@@ -83,8 +85,8 @@ async def extract_intent(text: str, register: Register, source_lang: str) -> Int
             micro_text=data["micro_text"],
             coaching_rationale=data["coaching_rationale"],
             suggestions=suggestions,
-        )
+        ), llm_response
 
     except Exception as exc:
         logger.warning("LLM intent extraction failed, using fallback: %s", exc)
-        return _fallback(register)
+        return _fallback(register), None

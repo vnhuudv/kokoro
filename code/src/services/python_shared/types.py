@@ -68,3 +68,5 @@ class LLMResponse(BaseModel):
     text: str
     provider: str
     latency_ms: int
+    input_tokens: int = 0
+    output_tokens: int = 0

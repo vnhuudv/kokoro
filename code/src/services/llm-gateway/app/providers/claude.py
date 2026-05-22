@@ -23,4 +23,6 @@ class ClaudeProvider(BaseProvider):
             text=message.content[0].text,
             provider=self.name,
             latency_ms=latency_ms,
+            input_tokens=message.usage.input_tokens,
+            output_tokens=message.usage.output_tokens,
         )

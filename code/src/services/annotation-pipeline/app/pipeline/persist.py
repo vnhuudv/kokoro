@@ -30,6 +30,9 @@ async def persist_case(
     source_language: str,
     target_language: str,
     latency_ms: int,
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+    llm_provider: str | None = None,
 ) -> None:
     try:
         tenant_id = await _resolve_tenant_id(tenant_name)
@@ -44,8 +47,9 @@ async def persist_case(
                 INSERT INTO case_library (
                     case_id, tenant_id, source_language, target_language,
                     register, intent_label, risk_categories,
-                    suggestion_offered, suggestion_used, expires_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, $9)
+                    suggestion_offered, suggestion_used,
+                    input_tokens, output_tokens, llm_provider, expires_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, $9, $10, $11, $12)
                 """,
                 case_id,
                 tenant_id,
@@ -55,6 +59,9 @@ async def persist_case(
                 result.intent_label,
                 risk_categories,
                 suggestion_offered,
+                input_tokens,
+                output_tokens,
+                llm_provider,
                 expires,
             )
 

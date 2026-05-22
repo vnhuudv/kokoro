@@ -21,8 +21,11 @@ class OpenAIProvider(BaseProvider):
             ],
         )
         latency_ms = int((time.monotonic() - start) * 1000)
+        usage = response.usage
         return LLMResponse(
             text=response.choices[0].message.content or "",
             provider=self.name,
             latency_ms=latency_ms,
+            input_tokens=usage.prompt_tokens if usage else 0,
+            output_tokens=usage.completion_tokens if usage else 0,
         )
