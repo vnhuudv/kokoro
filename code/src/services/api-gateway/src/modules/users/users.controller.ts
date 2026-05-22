@@ -13,9 +13,11 @@ export class UsersController {
   @Get('profiles')
   async getProfiles(
     @Query('slackIds') slackIds?: string,
+    @Query('tenantId') tenantId?: string,
   ): Promise<CachedProfile[]> {
     if (!slackIds) return [];
     const ids = slackIds.split(',').map(id => id.trim()).filter(Boolean);
-    return this.usersService.getProfilesBySlackIds(ids);
+    const tenant = tenantId ?? process.env.SLACK_TENANT_ID ?? 'default-tenant';
+    return this.usersService.getProfilesBySlackIds(ids, tenant);
   }
 }

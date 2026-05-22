@@ -32,10 +32,29 @@ describe('UsersController', () => {
     it('returns profiles for provided slackIds', async () => {
       service.getProfilesBySlackIds.mockResolvedValue(mockProfiles);
 
-      const result = await controller.getProfiles('U001,U002');
+      const result = await controller.getProfiles('U001,U002', 'tenant-uuid-123');
 
-      expect(service.getProfilesBySlackIds).toHaveBeenCalledWith(['U001', 'U002']);
+      expect(service.getProfilesBySlackIds).toHaveBeenCalledWith(['U001', 'U002'], 'tenant-uuid-123');
       expect(result).toEqual(mockProfiles);
+    });
+
+    it('falls back to SLACK_TENANT_ID env var when tenantId is not provided', async () => {
+      process.env.SLACK_TENANT_ID = 'env-tenant-uuid';
+      service.getProfilesBySlackIds.mockResolvedValue(mockProfiles);
+
+      await controller.getProfiles('U001,U002', undefined);
+
+      expect(service.getProfilesBySlackIds).toHaveBeenCalledWith(['U001', 'U002'], 'env-tenant-uuid');
+      delete process.env.SLACK_TENANT_ID;
+    });
+
+    it('falls back to default-tenant when neither tenantId nor env var is set', async () => {
+      delete process.env.SLACK_TENANT_ID;
+      service.getProfilesBySlackIds.mockResolvedValue(mockProfiles);
+
+      await controller.getProfiles('U001,U002', undefined);
+
+      expect(service.getProfilesBySlackIds).toHaveBeenCalledWith(['U001', 'U002'], 'default-tenant');
     });
 
     it('returns empty array when no slackIds provided', async () => {
@@ -47,9 +66,9 @@ describe('UsersController', () => {
     it('trims whitespace from individual ids', async () => {
       service.getProfilesBySlackIds.mockResolvedValue([mockProfiles[0]]);
 
-      await controller.getProfiles(' U001 , U002 ');
+      await controller.getProfiles(' U001 , U002 ', 'tenant-uuid-123');
 
-      expect(service.getProfilesBySlackIds).toHaveBeenCalledWith(['U001', 'U002']);
+      expect(service.getProfilesBySlackIds).toHaveBeenCalledWith(['U001', 'U002'], 'tenant-uuid-123');
     });
 
     it('returns empty array when slackIds is empty string', async () => {

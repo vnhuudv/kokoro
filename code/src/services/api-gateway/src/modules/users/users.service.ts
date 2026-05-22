@@ -13,10 +13,10 @@ export interface CachedProfile {
 export class UsersService {
   constructor(@Inject(DB_POOL) private readonly pool: Pool) {}
 
-  async getProfilesBySlackIds(slackIds: string[]): Promise<CachedProfile[]> {
+  async getProfilesBySlackIds(slackIds: string[], tenantId: string): Promise<CachedProfile[]> {
     if (!slackIds.length) return [];
 
-    const placeholders = slackIds.map((_, i) => `$${i + 1}`).join(', ');
+    const placeholders = slackIds.map((_, i) => `$${i + 2}`).join(', ');
     const { rows } = await this.pool.query<{
       slack_user_id: string;
       language: string;
@@ -25,8 +25,9 @@ export class UsersService {
     }>(
       `SELECT slack_user_id, language, fluency_score, opted_out_at
        FROM users
-       WHERE slack_user_id IN (${placeholders})`,
-      slackIds,
+       WHERE tenant_id = $1
+       AND slack_user_id IN (${placeholders})`,
+      [tenantId, ...slackIds],
     );
 
     return rows.map(r => ({
