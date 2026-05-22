@@ -8,4 +8,5 @@ RUN npm run build --workspace=@kokoro/dashboard
 
 FROM nginx:alpine
 COPY --from=builder /app/src/web/dashboard/dist /usr/share/nginx/html
+COPY src/web/dashboard/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
