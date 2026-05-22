@@ -41,7 +41,8 @@ export function CarbonView() {
   if (!data)   return <div style={{ padding: 40, color: '#94a3b8' }}>No carbon data yet.</div>;
 
   return (
-    <main style={{ padding: '32px 40px', background: '#f8fafc', minHeight: '100vh', maxWidth: 820, margin: '0 auto' }}>
+    <main style={{ background: '#f8fafc', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: '32px 40px' }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700, color: '#1e293b' }}>
           命 My AI Carbon — {data.period_month}
@@ -116,6 +117,7 @@ export function CarbonView() {
             </span>
           </div>
         ))}
+      </div>
       </div>
     </main>
   );

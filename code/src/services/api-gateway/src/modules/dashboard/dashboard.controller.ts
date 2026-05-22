@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, HttpException, HttpStatus } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 
 @Controller('dashboard')
@@ -31,5 +31,10 @@ export class DashboardController {
   @Get('public')
   getPublic() {
     return this.dashboardService.getPublicSummary();
+  }
+
+  @Get('inochi/carbon')
+  async getCarbon() {
+    return this.dashboardService.getCarbonFootprint();
   }
 }

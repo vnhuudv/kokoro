@@ -72,7 +72,8 @@ export function PublicView() {
   const fluencyGain = data ? Math.round((data.fluency_end - data.fluency_start) / data.fluency_start * 100) : 0;
 
   return (
-    <main style={{ padding: '32px 40px', background: '#f8fafc', minHeight: '100vh', maxWidth: 820, margin: '0 auto' }}>
+    <main style={{ background: '#f8fafc', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: '32px 40px' }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700, color: '#1e293b' }}>Kokoro Pilot — Results Overview</h1>
         <div style={{ fontSize: 14, color: '#94a3b8' }}>8-month pilot · Vnext Japan · VN ↔ JP teams</div>
@@ -185,6 +186,7 @@ export function PublicView() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </main>
   );

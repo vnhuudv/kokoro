@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useFetch } from '../hooks/useDashboard';
 
@@ -12,9 +13,9 @@ const card: React.CSSProperties = {
 function MetricCard({ label, current, baseline, delta, unit = '%' }: {
   label: string; current: number; baseline: number; delta: number; unit?: string;
 }) {
-  const up = delta > 0;
-  const arrow = up ? '↑' : '↓';
-  const color = label === 'Miscomm rate' ? (delta < 0 ? '#0ea5a0' : '#f59e0b') : (delta > 0 ? '#0ea5a0' : '#f59e0b');
+  const isGood = label === 'Miscomm rate' ? delta < 0 : delta > 0;
+  const arrow = delta > 0 ? '↑' : '↓';
+  const color = isGood ? '#0ea5a0' : '#f59e0b';
   return (
     <div style={card}>
       <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>{label}</div>
@@ -35,14 +36,19 @@ interface TeamMetrics {
 }
 
 interface TrendPoint { month: string; miscomm_rate: number; formal_fluency: number; }
-interface Case { case_id: string; intent_label: string; register: string; suggestion_used: boolean; }
+interface Case { case_id: string; intent_label: string; register: string; suggestion_used: boolean; risk_category: string | null; }
+
+const MIN_ACTIVE_USERS = 5;
 
 export function TeamView() {
   const { data: metrics, loading: ml } = useFetch<TeamMetrics>('/team');
   const { data: trend, loading: tl } = useFetch<TrendPoint[]>('/trend');
   const { data: cases, loading: cl } = useFetch<Case[]>('/cases');
+  const [expandedCase, setExpandedCase] = useState<string | null>(null);
 
   if (ml || tl || cl) return <div style={{ padding: 40, color: '#64748b' }}>Loading…</div>;
+
+  const belowThreshold = (metrics?.active_users ?? 0) < MIN_ACTIVE_USERS;
 
   return (
     <main style={{ padding: '32px 40px', background: '#f8fafc', minHeight: '100vh' }}>
@@ -50,6 +56,13 @@ export function TeamView() {
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#1e293b' }}>Team Fluency Dashboard</h1>
         <span style={{ fontSize: 13, color: '#94a3b8' }}>Vnext Japan · M3 → M6 · {metrics?.active_users} active participants</span>
       </div>
+
+      {/* Anonymisation warning */}
+      {belowThreshold && (
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '12px 16px', marginBottom: 20, fontSize: 14, color: '#92400e' }}>
+          Detailed metrics require at least {MIN_ACTIVE_USERS} active participants. Currently showing {metrics?.active_users} — some breakdowns are suppressed.
+        </div>
+      )}
 
       {/* Metric cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
@@ -91,22 +104,52 @@ export function TeamView() {
             <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
               <th style={{ textAlign: 'left', padding: '6px 0', color: '#64748b', fontWeight: 500 }}>Case</th>
               <th style={{ textAlign: 'left', padding: '6px 0', color: '#64748b', fontWeight: 500 }}>Register</th>
+              <th style={{ textAlign: 'left', padding: '6px 0', color: '#64748b', fontWeight: 500 }}>Flag</th>
               <th style={{ textAlign: 'left', padding: '6px 0', color: '#64748b', fontWeight: 500 }}>Outcome</th>
             </tr>
           </thead>
           <tbody>
             {(cases ?? []).map(c => (
-              <tr key={c.case_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '10px 0', color: '#334155' }}>{c.intent_label}</td>
-                <td style={{ padding: '10px 0' }}>
-                  <span style={{ fontSize: 11, background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: 4 }}>
-                    {c.register}
-                  </span>
-                </td>
-                <td style={{ padding: '10px 0', color: c.suggestion_used ? '#0ea5a0' : '#94a3b8' }}>
-                  {c.suggestion_used ? 'Suggestion used' : 'Dismissed'}
-                </td>
-              </tr>
+              <>
+                <tr
+                  key={c.case_id}
+                  style={{ borderBottom: expandedCase === c.case_id ? 'none' : '1px solid #f1f5f9', cursor: 'pointer' }}
+                  onClick={() => setExpandedCase(expandedCase === c.case_id ? null : c.case_id)}
+                >
+                  <td style={{ padding: '10px 0', color: '#334155' }}>
+                    <span style={{ marginRight: 6, fontSize: 12, color: '#94a3b8' }}>{expandedCase === c.case_id ? '▾' : '▸'}</span>
+                    {c.intent_label}
+                  </td>
+                  <td style={{ padding: '10px 0' }}>
+                    <span style={{ fontSize: 11, background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: 4 }}>
+                      {c.register}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 0' }}>
+                    {c.risk_category ? (
+                      <span style={{ fontSize: 11, background: '#fffbeb', color: '#92400e', padding: '2px 8px', borderRadius: 4 }}>
+                        {c.risk_category}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>—</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '10px 0', color: c.suggestion_used ? '#0ea5a0' : '#94a3b8' }}>
+                    {c.suggestion_used ? 'Suggestion used' : 'Dismissed'}
+                  </td>
+                </tr>
+                {expandedCase === c.case_id && (
+                  <tr key={`${c.case_id}-detail`}>
+                    <td colSpan={4} style={{ padding: '0 0 14px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: 13, color: '#64748b', background: '#f8fafc', padding: '10px 14px', borderRadius: 6 }}>
+                        <strong>Case ID:</strong> {c.case_id.split('-')[0]}…
+                        {c.risk_category && <> · <strong>Cultural risk:</strong> {c.risk_category}</>}
+                        {' '}· <strong>Result:</strong> {c.suggestion_used ? 'participant adopted the suggested phrasing' : 'participant sent original message'}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
           </tbody>
         </table>

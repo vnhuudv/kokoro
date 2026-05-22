@@ -38,7 +38,8 @@ export function PersonalView() {
     : 0;
 
   return (
-    <main style={{ padding: '32px 40px', background: '#f8fafc', minHeight: '100vh', maxWidth: 640, margin: '0 auto' }}>
+    <main style={{ background: '#f8fafc', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 40px' }}>
       <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#1e293b' }}>My Fluency</h1>
       <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 28 }}>Pilot Week 8</div>
 
@@ -102,6 +103,7 @@ export function PersonalView() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </main>
   );

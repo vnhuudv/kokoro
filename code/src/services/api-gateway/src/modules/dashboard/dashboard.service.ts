@@ -108,8 +108,10 @@ export class DashboardService {
       intent_label: string;
       register: string;
       suggestion_used: boolean | null;
+      risk_category: string | null;
     }>(
-      `SELECT case_id, intent_label, register, suggestion_used
+      `SELECT case_id, intent_label, register, suggestion_used,
+              CASE WHEN array_length(risk_categories, 1) > 0 THEN risk_categories[1] ELSE NULL END AS risk_category
        FROM case_library
        WHERE tenant_id = $1
        ORDER BY created_at DESC
@@ -122,6 +124,7 @@ export class DashboardService {
       intent_label: r.intent_label,
       register: r.register,
       suggestion_used: r.suggestion_used ?? false,
+      risk_category: r.risk_category ?? null,
     }));
   }
 
@@ -171,6 +174,12 @@ export class DashboardService {
       suggestions_total: Number(ev.total_events),
       patterns_mastered: [],
     };
+  }
+
+  async getCarbonFootprint() {
+    const res = await fetch('http://annotation-pipeline:8001/inochi/carbon');
+    if (!res.ok) throw new Error(`carbon endpoint ${res.status}`);
+    return res.json();
   }
 
   async getPublicSummary() {
