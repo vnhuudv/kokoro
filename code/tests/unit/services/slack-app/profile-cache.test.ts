@@ -67,4 +67,22 @@ describe('ProfileCache', () => {
     expect(result.get('U001')).toEqual(mockProfile);
     expect(result.get('U002')).toEqual(jpProfile);
   });
+
+  it('re-fetches profile after TTL expires', async () => {
+    const mockFetch = fetch as jest.Mock;
+    const nowSpy = jest.spyOn(Date, 'now');
+
+    nowSpy.mockReturnValue(1000);
+    mockFetch.mockResolvedValue({ ok: true, json: async () => [mockProfile] });
+    await cache.get('U001');
+    jest.clearAllMocks();
+    mockFetch.mockResolvedValue({ ok: true, json: async () => [mockProfile] });
+
+    // Advance past 5-minute TTL
+    nowSpy.mockReturnValue(1000 + 5 * 60 * 1000 + 1);
+    await cache.get('U001');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    nowSpy.mockRestore();
+  });
 });
