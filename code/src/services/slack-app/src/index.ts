@@ -1,6 +1,8 @@
 import { App, LogLevel } from '@slack/bolt';
 import { handleIncomingMessage } from './handlers/message';
 import { logRequest } from './middleware/logger';
+import { ProfileCache } from './cache/profile-cache';
+import { ChannelCache } from './cache/channel-cache';
 
 const ANNOTATION_URL = 'http://annotation-pipeline:8001/annotate/';
 const COACHING_URL = 'http://annotation-pipeline:8001/coaching/panel';
@@ -15,6 +17,11 @@ export function createApp(): App {
     socketMode: true,
     logLevel: LogLevel.DEBUG,
   });
+
+  const profileCache = new ProfileCache(
+    process.env.API_GATEWAY_URL ?? 'http://api-gateway:3001'
+  );
+  const channelCache = new ChannelCache(app.client);
 
   // Log every incoming payload
   app.use(async ({ payload, next }) => {
@@ -37,6 +44,8 @@ export function createApp(): App {
     await handleIncomingMessage(
       { text: ev.text ?? '', user: ev.user, channel: ev.channel, ts: ev.ts },
       client,
+      profileCache,
+      channelCache,
     );
   });
 
