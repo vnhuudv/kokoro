@@ -90,7 +90,7 @@ function buildAnnotationBlocks(result: AnnotationResult): (KnownBlock | Block)[]
     source_lang: SOURCE_LANG,
   });
 
-  const actionElements: object[] = result.suggestions.map((s, i) => ({
+  const actionElements: import('@slack/bolt').ActionsBlock['elements'] = result.suggestions.map((s, i) => ({
     type: 'button',
     text: { type: 'plain_text', text: s.label },
     action_id: `suggestion_${i}`,

@@ -107,7 +107,7 @@ export function createApp(): App {
         source_lang: SOURCE_LANG,
       });
 
-      const suggestionElements: object[] = (result.suggestions ?? []).map((s: any, i: number) => ({
+      const suggestionElements: import('@slack/bolt').ActionsBlock['elements'] = (result.suggestions ?? []).map((s: any, i: number) => ({
         type: 'button',
         text: { type: 'plain_text', text: s.label },
         action_id: `presend_suggestion_${i}`,
@@ -143,10 +143,10 @@ export function createApp(): App {
             text: { type: 'mrkdwn', text: `_${result.micro_text}_` },
           },
           ...(result.coaching_rationale ? [{
-            type: 'context',
-            elements: [{ type: 'mrkdwn', text: result.coaching_rationale }],
+            type: 'context' as const,
+            elements: [{ type: 'mrkdwn' as const, text: result.coaching_rationale }],
           }] : []),
-          { type: 'actions', elements: suggestionElements },
+          { type: 'actions' as const, elements: suggestionElements },
         ],
       });
 
@@ -174,10 +174,10 @@ export function createApp(): App {
     const channel = (body as any).channel?.id;
     const user = body.user.id;
 
-    let suggestionText = btn.value;
+    let suggestionText = btn.value ?? '';
     let caseId: string | null = null;
     try {
-      const parsed = JSON.parse(btn.value) as { text: string; case_id: string | null };
+      const parsed = JSON.parse(btn.value ?? '') as { text: string; case_id: string | null };
       suggestionText = parsed.text;
       caseId = parsed.case_id;
     } catch { /* plain text fallback */ }
@@ -211,10 +211,10 @@ export function createApp(): App {
     const channel = (body as any).channel?.id;
     const user = body.user.id;
 
-    let suggestionText = btn.value;
+    let suggestionText = btn.value ?? '';
     let caseId: string | null = null;
     try {
-      const parsed = JSON.parse(btn.value) as { text: string; case_id: string | null };
+      const parsed = JSON.parse(btn.value ?? '') as { text: string; case_id: string | null };
       suggestionText = parsed.text;
       caseId = parsed.case_id;
     } catch { /* plain text fallback */ }
@@ -250,7 +250,7 @@ export function createApp(): App {
     const triggerId = (body as any).trigger_id as string;
 
     let ctx: any = {};
-    try { ctx = JSON.parse(btn.value); } catch { return; }
+    try { ctx = JSON.parse(btn.value ?? ''); } catch { return; }
 
     // Open loading modal immediately (trigger_id expires in 3s)
     const loadingView = await client.views.open({
@@ -285,7 +285,7 @@ export function createApp(): App {
         suggestion: string | null;
       };
 
-      const modalBlocks: object[] = [
+      const modalBlocks: import('@slack/bolt').KnownBlock[] = [
         { type: 'section', text: { type: 'mrkdwn', text: `*REGISTER*\n${coaching.register_label}` } },
         { type: 'section', text: { type: 'mrkdwn', text: coaching.register_explanation } },
         { type: 'divider' },
