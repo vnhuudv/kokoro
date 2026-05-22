@@ -50,6 +50,7 @@ export async function annotate(
         target_language: targetLang,
         redacted_text: request.text,
         slack_user_id: request.senderId,
+        channel_id: request.channelId,
       }),
       signal: controller.signal,
     });

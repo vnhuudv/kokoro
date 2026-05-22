@@ -33,6 +33,7 @@ async def persist_case(
     input_tokens: int = 0,
     output_tokens: int = 0,
     llm_provider: str | None = None,
+    channel_id: str | None = None,
 ) -> None:
     try:
         tenant_id = await _resolve_tenant_id(tenant_name)
@@ -76,6 +77,7 @@ async def persist_case(
                 {
                     "message_id": result.message_id,
                     "case_id": case_id,
+                    "channel_id": channel_id,
                     "register": result.register,
                     "intent_label": result.intent_label,
                     "risk_category": result.risk_category,

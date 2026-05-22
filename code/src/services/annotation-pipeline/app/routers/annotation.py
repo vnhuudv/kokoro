@@ -40,6 +40,7 @@ async def annotate(request: AnnotationRequest, background_tasks: BackgroundTasks
         input_tokens=llm_response.input_tokens if llm_response else 0,
         output_tokens=llm_response.output_tokens if llm_response else 0,
         llm_provider=llm_response.provider if llm_response else None,
+        channel_id=request.channel_id,
     )
 
     if llm_response and request.slack_user_id:
