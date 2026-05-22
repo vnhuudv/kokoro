@@ -58,6 +58,7 @@ CREATE INDEX idx_nominication_sessions_beer_app_group
 CREATE TABLE nominication_attendees (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id    UUID NOT NULL REFERENCES nominication_sessions(id),
+  tenant_id     UUID NOT NULL REFERENCES tenants(tenant_id),
   slack_user_id TEXT NOT NULL,
   confirmed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (session_id, slack_user_id)
@@ -70,6 +71,7 @@ CREATE INDEX idx_nominication_attendees_session
 CREATE TABLE nominication_correlations (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id      UUID NOT NULL REFERENCES nominication_sessions(id),
+  tenant_id       UUID NOT NULL REFERENCES tenants(tenant_id),
   channel_id      TEXT NOT NULL,
   friction_before NUMERIC(5,2),
   friction_after  NUMERIC(5,2),
@@ -79,3 +81,9 @@ CREATE TABLE nominication_correlations (
 
 CREATE INDEX idx_nominication_correlations_session
   ON nominication_correlations (session_id);
+
+CREATE INDEX idx_nominication_sessions_initiator
+  ON nominication_sessions (initiator_slack_user_id);
+
+CREATE INDEX idx_nominication_attendees_user
+  ON nominication_attendees (slack_user_id);
