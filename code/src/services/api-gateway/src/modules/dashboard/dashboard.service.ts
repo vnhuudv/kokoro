@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Pool } from 'pg';
 import { DB_POOL } from '../database/database.module';
+import type { EnScore } from './en-score.types';
 
 const DEFAULT_TENANT = 'a0000000-0000-0000-0000-000000000001';
 
@@ -180,6 +181,70 @@ export class DashboardService {
     const res = await fetch('http://annotation-pipeline:8001/inochi/carbon');
     if (!res.ok) throw new Error(`carbon endpoint ${res.status}`);
     return res.json();
+  }
+
+  async getEnScore(tenantId: string, slackUserId: string): Promise<EnScore> {
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+    const { rows: sessionRows } = await this.pool.query<{
+      sessions_count: string;
+      positive_correlations: string;
+    }>(
+      `SELECT
+         COUNT(DISTINCT ns.id)                                                              AS sessions_count,
+         COUNT(DISTINCT nc.id) FILTER (WHERE nc.delta < -15)                               AS positive_correlations
+       FROM nominication_sessions ns
+       JOIN nominication_attendees na   ON na.session_id = ns.id
+       LEFT JOIN nominication_correlations nc ON nc.session_id = ns.id
+       WHERE ns.tenant_id = $1::uuid
+         AND na.slack_user_id = $2
+         AND ns.created_at > $3
+         AND ns.status = 'completed'`,
+      [tenantId, slackUserId, ninetyDaysAgo],
+    );
+
+    const { rows: crossRows } = await this.pool.query<{ cross_cultural_ratio: string }>(
+      `SELECT
+         ROUND(
+           COUNT(DISTINCT na.session_id) FILTER (
+             WHERE EXISTS (
+               SELECT 1 FROM nominication_attendees na2
+               JOIN users u2 ON u2.slack_user_id = na2.slack_user_id
+               JOIN users u1 ON u1.slack_user_id = $2
+               WHERE na2.session_id = na.session_id
+                 AND na2.slack_user_id != $2
+                 AND u2.language != u1.language
+                 AND u2.tenant_id = $1::uuid
+                 AND u1.tenant_id = $1::uuid
+             )
+           ) * 1.0 / NULLIF(COUNT(DISTINCT na.session_id), 0), 2
+         ) AS cross_cultural_ratio
+       FROM nominication_attendees na
+       JOIN nominication_sessions ns ON ns.id = na.session_id
+       WHERE na.slack_user_id = $2
+         AND ns.tenant_id = $1::uuid
+         AND ns.created_at > $3
+         AND ns.status = 'completed'`,
+      [tenantId, slackUserId, ninetyDaysAgo],
+    );
+
+    const sessions   = Number(sessionRows[0]?.sessions_count ?? 0);
+    const positive   = Number(sessionRows[0]?.positive_correlations ?? 0);
+    const crossRatio = Number(crossRows[0]?.cross_cultural_ratio ?? 0);
+
+    const enScore = Math.round(
+      (Math.min(sessions / 6, 1) * 40 + crossRatio * 35 + Math.min(positive / 3, 1) * 25) * 100,
+    );
+
+    return {
+      enScore,
+      breakdown: {
+        sessionsLast90Days: sessions,
+        positiveCorrelations: positive,
+        crossCulturalRatio: crossRatio,
+      },
+      trend: 'stable',
+    };
   }
 
   async getPublicSummary() {

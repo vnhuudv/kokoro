@@ -37,4 +37,13 @@ export class DashboardController {
   async getCarbon() {
     return this.dashboardService.getCarbonFootprint();
   }
+
+  @Get('en-score')
+  async getEnScore(
+    @Query('userId') userId: string,
+    @Query('tenantId') tenantId: string,
+  ) {
+    const tenant = tenantId ?? process.env.SLACK_TENANT_ID ?? 'a0000000-0000-0000-0000-000000000001';
+    return this.dashboardService.getEnScore(tenant, userId);
+  }
 }
