@@ -1,5 +1,7 @@
 import { App, LogLevel } from '@slack/bolt';
 import { handleIncomingMessage } from './handlers/message';
+import { handleNomicationCommand } from './handlers/nominication';
+import { pollAndSendNudges } from './handlers/nudge-poller';
 import { logRequest } from './middleware/logger';
 import { ProfileCache } from './cache/profile-cache';
 import { ChannelCache } from './cache/channel-cache';
@@ -169,6 +171,12 @@ export function createApp(): App {
         text: 'Kokoro is temporarily unavailable. You can send your message.',
       });
     }
+  });
+
+  // ── Nominication: /nominication [date time venue] ───────────────────────────
+  app.command('/nominication', async ({ command, ack, client }) => {
+    await ack();
+    await handleNomicationCommand(command.channel_id, command.text, command.user_id, client);
   });
 
   // ── Dismiss pre-send (send original) ────────────────────────────────────────
@@ -352,5 +360,10 @@ if (require.main === module) {
   (async () => {
     await app.start();
     logRequest('slack-app.started');
+    setInterval(() => {
+      pollAndSendNudges(app.client).catch((err) =>
+        logRequest('nudge.poller_error', { error: String(err) })
+      );
+    }, 5 * 60 * 1000);
   })();
 }
