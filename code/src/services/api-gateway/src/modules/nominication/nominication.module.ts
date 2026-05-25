@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { NomicationController } from './nominication.controller';
-import { NomicationService } from './nominication.service';
+import { NominicationController } from './nominication.controller';
+import { NominicationService } from './nominication.service';
 import { DatabaseModule } from '../database/database.module';
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [NomicationController],
-  providers: [NomicationService],
+  controllers: [NominicationController],
+  providers: [NominicationService],
+  exports: [NominicationService],
 })
-export class NomicationModule {}
+export class NominicationModule {}

@@ -11,7 +11,7 @@ export interface CreateSessionDto {
   nudgeId?: string;
 }
 
-export interface NomicationSession {
+export interface NominicationSession {
   id: string;
   tenantId: string;
   channelId: string;
@@ -25,7 +25,7 @@ export interface NomicationSession {
   createdAt: Date;
 }
 
-export interface NomicationNudge {
+export interface NominicationNudge {
   id: string;
   tenantId: string;
   channelId: string;

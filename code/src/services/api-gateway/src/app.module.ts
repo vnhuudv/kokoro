@@ -6,7 +6,7 @@ import { AnnotationsModule } from './modules/annotations/annotations.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DatabaseModule } from './modules/database/database.module';
 import { InochiModule } from './modules/inochi/inochi.module';
-import { NomicationModule } from './modules/nominication/nominication.module';
+import { NominicationModule } from './modules/nominication/nominication.module';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { NomicationModule } from './modules/nominication/nominication.module';
     AnnotationsModule,
     DashboardModule,
     InochiModule,
-    NomicationModule,
+    NominicationModule,
   ],
 })
 export class AppModule {}

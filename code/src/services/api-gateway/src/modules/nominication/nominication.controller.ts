@@ -1,10 +1,10 @@
 import { Controller, Get, Logger } from '@nestjs/common';
-import { NomicationService } from './nominication.service';
+import { NominicationService } from './nominication.service';
 
 @Controller('nominication')
-export class NomicationController {
-  private readonly logger = new Logger(NomicationController.name);
-  constructor(private readonly service: NomicationService) {}
+export class NominicationController {
+  private readonly logger = new Logger(NominicationController.name);
+  constructor(private readonly service: NominicationService) {}
 
   @Get('health')
   health() { return { status: 'ok' }; }
