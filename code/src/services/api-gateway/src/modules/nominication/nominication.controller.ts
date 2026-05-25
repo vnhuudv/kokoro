@@ -28,4 +28,15 @@ export class NominicationController {
     const tenant = tenantId ?? process.env.SLACK_TENANT_ID ?? 'a0000000-0000-0000-0000-000000000001';
     return this.service.getSession(id, tenant);
   }
+
+  @Post('sessions/:id/attend')
+  async markAttendance(
+    @Param('id') id: string,
+    @Query('tenantId') tenantId: string,
+    @Body('slackUserId') slackUserId: string,
+  ) {
+    const tenant = tenantId ?? process.env.SLACK_TENANT_ID ?? 'a0000000-0000-0000-0000-000000000001';
+    await this.service.markAttendance(id, tenant, slackUserId);
+    return { ok: true };
+  }
 }

@@ -53,4 +53,27 @@ describe('NominicationService', () => {
       await expect(service.getSession('bad-id', 'tenant-1')).rejects.toThrow('Session not found');
     });
   });
+
+  describe('markAttendance', () => {
+    it('inserts attendee record', async () => {
+      // verify session exists
+      mockPool.query.mockResolvedValueOnce({ rows: [{ id: 'sess-1' }] });
+      // insert attendee (ON CONFLICT DO NOTHING)
+      mockPool.query.mockResolvedValueOnce({ rows: [] });
+      // tryCompleteSession update
+      mockPool.query.mockResolvedValueOnce({ rows: [] });
+
+      await service.markAttendance('sess-1', 'tenant-1', 'U002');
+
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO nominication_attendees'),
+        expect.arrayContaining(['sess-1', 'U002']),
+      );
+    });
+
+    it('throws NotFoundException when session not in tenant', async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [] });
+      await expect(service.markAttendance('bad-id', 'tenant-1', 'U002')).rejects.toThrow('Session not found');
+    });
+  });
 });

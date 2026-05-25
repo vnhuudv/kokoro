@@ -61,8 +61,28 @@ export class NominicationService {
     return rows[0];
   }
 
-  async markAttendance(_sessionId: string, _tenantId: string, _slackUserId: string): Promise<void> {
-    throw new Error('not implemented');
+  async markAttendance(sessionId: string, tenantId: string, slackUserId: string): Promise<void> {
+    const { rows } = await this.pool.query<{ id: string }>(
+      `SELECT id FROM nominication_sessions WHERE id = $1 AND tenant_id = $2`,
+      [sessionId, tenantId],
+    );
+    if (rows.length === 0) throw new NotFoundException('Session not found');
+
+    await this.pool.query(
+      `INSERT INTO nominication_attendees (session_id, slack_user_id)
+       VALUES ($1, $2)
+       ON CONFLICT (session_id, slack_user_id) DO NOTHING`,
+      [sessionId, slackUserId],
+    );
+
+    await this.pool.query(
+      `UPDATE nominication_sessions
+       SET status = 'completed'
+       WHERE id = $1
+         AND status = 'pending'
+         AND scheduled_at < NOW() - INTERVAL '24 hours'`,
+      [sessionId],
+    );
   }
 
   async getPendingNudges(_tenantId: string): Promise<NominicationNudge[]> {
