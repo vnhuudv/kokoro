@@ -85,11 +85,34 @@ export class NominicationService {
     );
   }
 
-  async getPendingNudges(_tenantId: string): Promise<NominicationNudge[]> {
-    throw new Error('not implemented');
+  async getPendingNudges(tenantId: string): Promise<NominicationNudge[]> {
+    const { rows } = await this.pool.query<NominicationNudge>(
+      `SELECT
+         id,
+         tenant_id               AS "tenantId",
+         channel_id              AS "channelId",
+         target_slack_user_id    AS "targetSlackUserId",
+         reason,
+         friction_score          AS "frictionScore",
+         status,
+         created_at              AS "createdAt",
+         responded_at            AS "respondedAt"
+       FROM nominication_nudges
+       WHERE tenant_id = $1
+         AND status IN ('pending')
+       ORDER BY created_at ASC`,
+      [tenantId],
+    );
+    return rows;
   }
 
-  async updateNudgeStatus(_id: string, _tenantId: string, _status: NudgeStatus): Promise<void> {
-    throw new Error('not implemented');
+  async updateNudgeStatus(id: string, tenantId: string, status: NudgeStatus): Promise<void> {
+    await this.pool.query(
+      `UPDATE nominication_nudges
+       SET status = $1,
+           responded_at = CASE WHEN $1 IN ('accepted', 'dismissed', 'expired') THEN NOW() ELSE responded_at END
+       WHERE id = $2 AND tenant_id = $3`,
+      [status, id, tenantId],
+    );
   }
 }

@@ -76,4 +76,32 @@ describe('NominicationService', () => {
       await expect(service.markAttendance('bad-id', 'tenant-1', 'U002')).rejects.toThrow('Session not found');
     });
   });
+
+  describe('getPendingNudges', () => {
+    it('returns nudges with status pending', async () => {
+      const nudges = [{ id: 'n-1', status: 'pending', targetSlackUserId: 'U001', channelId: 'C001' }];
+      mockPool.query.mockResolvedValueOnce({ rows: nudges });
+
+      const result = await service.getPendingNudges('tenant-1');
+
+      expect(result).toEqual(nudges);
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining("status IN ('pending')"),
+        ['tenant-1'],
+      );
+    });
+  });
+
+  describe('updateNudgeStatus', () => {
+    it('updates nudge status and responded_at', async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [] });
+
+      await service.updateNudgeStatus('n-1', 'tenant-1', 'sent');
+
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE nominication_nudges'),
+        expect.arrayContaining(['sent', 'n-1', 'tenant-1']),
+      );
+    });
+  });
 });

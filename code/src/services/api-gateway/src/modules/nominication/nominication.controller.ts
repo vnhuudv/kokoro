@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, Query, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, Logger } from '@nestjs/common';
 import { NominicationService } from './nominication.service';
 import type { CreateSessionDto } from './nominication.types';
 
@@ -37,6 +37,23 @@ export class NominicationController {
   ) {
     const tenant = tenantId ?? process.env.SLACK_TENANT_ID ?? 'a0000000-0000-0000-0000-000000000001';
     await this.service.markAttendance(id, tenant, slackUserId);
+    return { ok: true };
+  }
+
+  @Get('nudges/pending')
+  async getPendingNudges(@Query('tenantId') tenantId: string) {
+    const tenant = tenantId ?? process.env.SLACK_TENANT_ID ?? 'a0000000-0000-0000-0000-000000000001';
+    return this.service.getPendingNudges(tenant);
+  }
+
+  @Patch('nudges/:id')
+  async updateNudgeStatus(
+    @Param('id') id: string,
+    @Query('tenantId') tenantId: string,
+    @Body('status') status: string,
+  ) {
+    const tenant = tenantId ?? process.env.SLACK_TENANT_ID ?? 'a0000000-0000-0000-0000-000000000001';
+    await this.service.updateNudgeStatus(id, tenant, status as any);
     return { ok: true };
   }
 }
