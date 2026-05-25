@@ -1,5 +1,6 @@
 import { buildPresendCard } from '../cards/presend';
 import { logRequest } from '../middleware/logger';
+export { handleNomicationCommand } from './nominication';
 
 const ANNOTATION_URL = 'http://annotation-pipeline:8001/annotate/';
 const TENANT_ID = process.env.KOKORO_TENANT_ID ?? 'default-tenant';

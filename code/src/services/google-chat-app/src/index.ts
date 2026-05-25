@@ -3,7 +3,8 @@ import { google } from 'googleapis';
 import { verifyGoogleToken } from './middleware/verify';
 import { logRequest } from './middleware/logger';
 import { handleMessage } from './handlers/message';
-import { handleSlashCommand } from './handlers/slash';
+import { handleSlashCommand, handleNomicationCommand } from './handlers/slash';
+import { pollAndSendNudgesGChat } from './handlers/nominication';
 import { handleAction } from './handlers/action';
 
 const PORT = process.env.PORT ?? 8004;
@@ -79,6 +80,13 @@ app.post('/webhook', async (req: Request, res: Response) => {
     const draft = (payload.message?.argumentText ?? payload.message?.text ?? '').trim();
     const spaceName: string = payload.space?.name ?? '';
     const senderName: string = chat.user?.name ?? event.user?.name ?? '';
+    const commandName: string = payload.command?.commandName ?? event.message?.slashCommand?.commandName ?? '';
+
+    // Route /nominication — responds synchronously
+    if (commandName === '/nominication') {
+      await handleNomicationCommand(spaceName, senderName, draft, res);
+      return;
+    }
 
     res.json({});
 
@@ -110,6 +118,15 @@ app.post('/webhook', async (req: Request, res: Response) => {
     // Pure Chat app: slash command inside MESSAGE
     if (event.message?.slashCommand) {
       const draft = (event.message?.argumentText ?? '').trim();
+      const slashCommandName: string = event.message?.slashCommand?.commandName ?? '';
+
+      if (slashCommandName === '/nominication') {
+        const spaceName: string = event.space?.name ?? '';
+        const senderName: string = event.user?.name ?? '';
+        await handleNomicationCommand(spaceName, senderName, draft, res);
+        return;
+      }
+
       const card = await handleSlashCommand(draft);
       res.json(wrapIfAddon(isAddon, card));
       return;
@@ -175,3 +192,10 @@ app.post('/webhook', async (req: Request, res: Response) => {
 app.listen(PORT, () => {
   logRequest('google-chat-app.started', { port: PORT });
 });
+
+setInterval(() => {
+  pollAndSendNudgesGChat(async (_spaceId, _userId, _text) => {
+    // Google Chat DM sending requires Rooms API — log for now
+    console.log('[gchat-nudge-poller] nudge pending:', _userId, _text.slice(0, 60));
+  }).catch((err) => console.error('[gchat-nudge-poller] error:', err));
+}, 5 * 60 * 1000);
