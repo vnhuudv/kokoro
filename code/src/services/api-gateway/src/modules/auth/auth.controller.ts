@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Redirect, Res, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Query, Redirect, Res, Body, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 
@@ -29,6 +29,16 @@ export class AuthController {
     } catch (err) {
       this.logger.error(`Slack callback failed: ${err}`);
       res.redirect(`${dashboard}/login?error=auth_failed`);
+    }
+  }
+
+  @Post('beer-token')
+  async beerToken(@Body() body: { slackUserId: string }, @Res() res: Response) {
+    try {
+      const token = await this.authService.issueBeerToken(body.slackUserId);
+      res.json({ token });
+    } catch {
+      res.status(401).json({ error: 'unauthorized' });
     }
   }
 }

@@ -72,4 +72,23 @@ export class AuthService {
 
     return this.jwtService.sign(payload);
   }
+
+  async issueBeerToken(slackUserId: string): Promise<string> {
+    const { rows } = await this.pool.query<{ user_id: string; tenant_id: string }>(
+      `SELECT user_id, tenant_id FROM users
+       WHERE slack_user_id = $1 AND opted_out_at IS NULL
+       LIMIT 1`,
+      [slackUserId],
+    );
+    if (rows.length === 0) {
+      this.logger.warn('Beer token request: no active user for Slack ID %s', slackUserId);
+      throw new Error('User not authorized');
+    }
+    const payload: AuthUser = {
+      user_id:       rows[0].user_id,
+      tenant_id:     rows[0].tenant_id,
+      slack_user_id: slackUserId,
+    };
+    return this.jwtService.sign(payload, { expiresIn: '15m' });
+  }
 }
