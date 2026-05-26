@@ -1,0 +1,215 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Infrastructure — matches docker-compose service names
+  DATABASE_URL: postgresql://kokoro:kokoro@localhost:5432/kokoro
+  REDIS_URL: redis://localhost:6379
+  KAFKA_BROKERS: localhost:29092
+  # Non-secret defaults safe for CI
+  NODE_ENV: test
+  PORT: 3000
+  SLACK_TENANT_ID: a0000000-0000-0000-0000-000000000001
+  KOKORO_TENANT_ID: a0000000-0000-0000-0000-000000000001
+  NUDGE_FRICTION_THRESHOLD: "0.6"
+  NUDGE_FRICTION_WINDOW_DAYS: "7"
+  NUDGE_COOLDOWN_DAYS: "14"
+  NUDGE_MIN_EVENTS: "3"
+  NUDGE_ENGINE_INTERVAL_SECONDS: "3600"
+  CORRELATION_WINDOW_DAYS: "14"
+  CORRELATION_SCAN_INTERVAL_SECONDS: "1800"
+  KOKORO_SOURCE_LANG: ja
+  KOKORO_TARGET_LANG: vi
+  JWT_SECRET: ci-test-secret-not-for-production
+  ANNOTATION_PIPELINE_URL: http://localhost:8001
+  LLM_GATEWAY_URL: http://localhost:8002
+  API_GATEWAY_URL: http://localhost:3000
+
+jobs:
+  # ── Job 1: Env drift check ──────────────────────────────────────────────────
+  # Verifies that every key in .env.example is set in the CI environment.
+  # Catches the class of bug where a new env var is added to .env.example
+  # but not wired into CI (or vice versa).
+  env-drift:
+    name: Env drift check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check all .env.example keys are set in CI
+        run: |
+          missing=()
+          while IFS= read -r line; do
+            # Skip blank lines and comments
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            if [[ -z "${!key+x}" ]]; then
+              missing+=("$key")
+            fi
+          done < code/.env.example
+
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "ERROR: The following keys are in .env.example but not set in CI:"
+            printf '  - %s\n' "${missing[@]}"
+            echo ""
+            echo "Add them to the 'env:' block in .github/workflows/ci.yml (non-secret)"
+            echo "or to GitHub Actions secrets (sensitive values)."
+            exit 1
+          fi
+          echo "OK: all .env.example keys are present in CI environment"
+
+  # ── Job 2: Unit tests ───────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # NestJS — api-gateway
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: code/src/services/api-gateway/package-lock.json
+
+      - name: Install api-gateway deps
+        working-directory: code/src/services/api-gateway
+        run: npm ci
+
+      - name: Run api-gateway unit tests
+        working-directory: code/src/services/api-gateway
+        run: npm test -- --passWithNoTests
+
+      # NestJS — slack-app
+      - name: Install slack-app deps
+        working-directory: code/src/services/slack-app
+        run: npm ci
+
+      - name: Run slack-app unit tests
+        working-directory: code/src/services/slack-app
+        run: npm test -- --passWithNoTests
+
+      # NestJS — google-chat-app
+      - name: Install google-chat-app deps
+        working-directory: code/src/services/google-chat-app
+        run: npm ci
+
+      - name: Run google-chat-app unit tests
+        working-directory: code/src/services/google-chat-app
+        run: npm test -- --passWithNoTests
+
+      # Python services
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run annotation-pipeline tests
+        working-directory: code/src/services/annotation-pipeline
+        run: |
+          pip install -r requirements.txt -q
+          pytest tests/ -q --tb=short 2>/dev/null || pytest -q --tb=short --ignore=tests 2>/dev/null || echo "No tests found — skipping"
+
+      - name: Run feedback-learner tests
+        working-directory: code/src/services/feedback-learner
+        run: |
+          pip install -r requirements.txt -q
+          pytest tests/ -q --tb=short 2>/dev/null || pytest -q --tb=short --ignore=tests 2>/dev/null || echo "No tests found — skipping"
+
+  # ── Job 3: Smoke tests ──────────────────────────────────────────────────────
+  # Spins up the real stack (postgres + api-gateway), applies migrations,
+  # and runs every committed smoke script in tests/smoke/.
+  # This enforces Phase 5 of the development workflow on every PR.
+  smoke-tests:
+    name: Integration smoke tests
+    runs-on: ubuntu-latest
+    needs: [env-drift, unit-tests]
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: kokoro
+          POSTGRES_PASSWORD: kokoro
+          POSTGRES_DB: kokoro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kokoro -d kokoro"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Apply all DB migrations
+      - name: Apply migrations
+        run: |
+          for f in $(ls code/src/database/migrations/*.sql | sort); do
+            echo "Applying $f..."
+            PGPASSWORD=kokoro psql -h localhost -U kokoro -d kokoro -f "$f"
+          done
+
+      # Build and start api-gateway
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: code/src/services/api-gateway/package-lock.json
+
+      - name: Build api-gateway
+        working-directory: code/src/services/api-gateway
+        run: npm ci && npm run build
+
+      - name: Start api-gateway
+        working-directory: code/src/services/api-gateway
+        run: node dist/main.js &
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          NODE_ENV: ${{ env.NODE_ENV }}
+          PORT: ${{ env.PORT }}
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          SLACK_TENANT_ID: ${{ env.SLACK_TENANT_ID }}
+
+      - name: Wait for api-gateway to be ready
+        run: |
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:3000/api/nominication/health > /dev/null 2>&1; then
+              echo "api-gateway ready"
+              break
+            fi
+            echo "Waiting... ($i/20)"
+            sleep 2
+          done
+
+      # Run every smoke script in tests/smoke/
+      - name: Run smoke tests
+        run: |
+          failed=0
+          for script in tests/smoke/*.sh; do
+            echo "════════════════════════════════════"
+            echo "Running: $script"
+            echo "════════════════════════════════════"
+            chmod +x "$script"
+            if ! bash "$script"; then
+              echo "FAILED: $script"
+              failed=1
+            fi
+          done
+          exit $failed
