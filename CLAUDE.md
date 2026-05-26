@@ -136,9 +136,132 @@ code/
 
 ---
 
+## Development Workflow
+
+Every feature or module follows this 6-phase cycle without exception. No phase may be skipped.
+
+```
+Phase 1        Phase 2        Preflight      Phase 3        Phase 4        Phase 5        Phase 6
+Brainstorm  →  Plan +      →  Gate        →  Subagent    →  Two-stage   →  Smoke test  →  Retro →
+& Design       Dep. Graph     tests green    impl.           review         + script       CLAUDE.md
+```
+
+---
+
+### Phase 1 — Brainstorm & Design
+
+**Output:** Spec document committed to `docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md`
+
+1. Describe the feature in plain language. Claude explores the project context first.
+2. Answer clarifying questions one at a time — purpose, actors, constraints, edge cases, success criteria.
+3. Review 2–3 proposed approaches with trade-offs. Claude makes a recommendation.
+4. Approve the design section by section — architecture, data model, error handling, testing.
+5. Claude writes, self-reviews for gaps, and commits the spec.
+6. You review the committed spec file. Request changes if needed. **Only proceed when approved.**
+
+> **Gate:** No implementation starts until the spec is committed and explicitly approved. If code and spec diverge, fix the spec first.
+
+---
+
+### Phase 2 — Implementation Plan with Dependency Graph
+
+**Output:** Plan committed to `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`
+
+1. Claude reads the spec and produces ordered tasks — each 1–4 hours, with named files and acceptance criteria.
+2. Each task names the exact files to create or modify.
+3. **Each task declares its dependencies** (`depends_on: [1, 3]`). Tasks with no shared dependencies are flagged for parallel dispatch.
+4. Plan is committed. You review and approve before any implementation begins.
+
+---
+
+### Preflight Gate — Pre-Task Check
+
+Runs **before every Phase 4 review** is dispatched.
+
+1. Run the full test suite (`npm test` / `pytest`) — all services.
+2. New failures → task is **BLOCKED**. Reviews do not start.
+3. Pre-existing failure found → log in `tests/known-failures.md` and investigate. Never silently accept a failing test.
+4. Only a green suite (excluding logged known failures) allows Phase 4 to proceed.
+
+---
+
+### Phase 3 — Subagent Implementation
+
+**Output:** Committed code + unit tests per task
+
+1. Controller dispatches each task with: full task text, architectural context, working directory, and the implementer prompt template.
+2. **Independent tasks are dispatched in parallel** — one subagent per task, running concurrently.
+3. Subagent implements → writes tests → self-reviews → commits → reports back.
+4. Report status must be one of: `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, or `NEEDS_CONTEXT`.
+5. `BLOCKED` or `NEEDS_CONTEXT` stops the queue. Controller provides context or splits the task.
+
+---
+
+### Phase 4 — Two-Stage Independent Review
+
+**Output:** Verified task or fix list
+
+1. **Spec compliance review:** Did the implementer build exactly what was requested? Missing requirements? Wrong interpretation? Extra features not in spec?
+2. If spec compliance passes → dispatch code quality review. If not → return to implementer with specific findings.
+3. **Code quality review:** Clean naming, single responsibility, correct file sizing, adequate test coverage, consistent with existing codebase patterns.
+4. Critical or important issues → fix inline before marking task complete. Minor issues → log for the retrospective.
+
+---
+
+### Phase 5 — Integration Smoke Test + Committed Script
+
+**Output:** All new endpoints exercised end-to-end; smoke script committed to `tests/smoke/<module>.sh`
+
+1. **Step 0 — Env drift check:** Diff `.env` against `.env.example`. Any key in example but missing from `.env` must be added before the stack starts.
+2. Start infrastructure: `docker compose up -d [required services]` — wait for health checks.
+3. Apply all pending migrations. Rebuild service images.
+4. Exercise every new endpoint with real HTTP calls. Seed required DB rows where needed.
+5. Check service logs for runtime errors. Fix any issues found.
+6. **Commit the smoke script** — save all curl commands with PASS/FAIL output per endpoint to `tests/smoke/<module>.sh` before moving on.
+
+---
+
+### Phase 6 — Post-Module Retrospective
+
+**Output:** Updated `CLAUDE.md` conventions; ADR filed if requirements changed
+
+1. Review every `DONE_WITH_CONCERNS` report, every bug caught in review, and every issue found in smoke testing.
+2. For each one, ask: "Is there a rule that would have prevented this?" If yes, add it to `CLAUDE.md` as a standing convention — not a note.
+3. **Spec change protocol:** If requirements changed during the module, document the change as an ADR (`specs/decisions/ADR-NNN-title.md`). Record what changed, why, and which tasks were affected. Never let requirements drift silently.
+4. Update the plan template with any new checklist items for future implementers.
+
+---
+
+### Standing Protocol — Spec Change Mid-Implementation
+
+When requirements change after implementation has started:
+
+1. **Stop the queue.** No new tasks are dispatched until the impact is assessed.
+2. **Update the spec first.** Commit the change with a clear message explaining what changed and why.
+3. **Audit the plan.** Mark each remaining task as: unaffected, needs revision, or replace with new task.
+4. For completed tasks affected by the change, create a new fix task — never amend history.
+5. **Resume dispatch** from the revised plan once it is approved.
+
+---
+
 ## Working Conventions
 
 - Before starting a new feature, create or update its spec in `specs/requirements/` first.
 - When a significant architectural choice is made, record it in `specs/decisions/` immediately.
 - Raw materials in `specs/input/` are never modified — they are the ground truth of what was originally asked.
 - Requirements use the format: Purpose → Actors → Functional Requirements (FR-XXX-NNN) → Acceptance Criteria → Constraints → Edge Cases → Out of Scope → Phase Map.
+
+### CI/CD
+
+- CI runs on every PR and push to `main` via `.github/workflows/ci.yml`.
+- Three jobs: **env-drift** (all `.env.example` keys present in CI), **unit-tests** (Jest + pytest), **smoke-tests** (real stack + `tests/smoke/*.sh`).
+- Every new module must ship a smoke script at `tests/smoke/<module>.sh` before the PR is merged — this is the Phase 5 deliverable.
+- Pre-existing test failures go in `tests/known-failures.md`. Never silently accept a red CI run.
+- Secrets (API keys, tokens) are stored in GitHub Actions secrets — never in the workflow file.
+
+### Lessons from Pilot (added via Phase 6 retrospective)
+
+- Every `INSERT` into a table with a `tenant_id NOT NULL` column must include `tenant_id` explicitly in the column list — never omit it and rely on surrounding context.
+- After any task that adds new environment variables, diff `.env` against `.env.example` immediately and add the missing keys before the next smoke test.
+- When a NestJS app uses `app.setGlobalPrefix('api')`, all API routes are under `/api/...` — never test at the root path.
+- Container images built before a module was added to the application module registry must be rebuilt (`docker compose build <service>`) before smoke testing. A 404 on a new route is almost always a stale image.
