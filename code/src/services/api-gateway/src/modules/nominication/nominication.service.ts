@@ -69,10 +69,10 @@ export class NominicationService {
     if (rows.length === 0) throw new NotFoundException('Session not found');
 
     await this.pool.query(
-      `INSERT INTO nominication_attendees (session_id, slack_user_id)
-       VALUES ($1, $2)
+      `INSERT INTO nominication_attendees (session_id, tenant_id, slack_user_id)
+       VALUES ($1, $2, $3)
        ON CONFLICT (session_id, slack_user_id) DO NOTHING`,
-      [sessionId, slackUserId],
+      [sessionId, tenantId, slackUserId],
     );
 
     await this.pool.query(
