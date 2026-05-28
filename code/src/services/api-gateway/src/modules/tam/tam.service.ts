@@ -149,8 +149,7 @@ export class TamService {
 
       const { rows: existing } = await client.query<{ count: string }>(
         `SELECT COUNT(*)::text AS count FROM tam_actions
-         WHERE post_id = $1 AND tenant_id = $2 AND user_id = $3
-         FOR UPDATE`,
+         WHERE post_id = $1 AND tenant_id = $2 AND user_id = $3`,
         [postId, tenantId, userId],
       );
       isFirstAction = parseInt(existing[0].count, 10) === 0;
