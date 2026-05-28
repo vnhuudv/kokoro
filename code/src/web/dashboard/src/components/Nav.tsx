@@ -26,6 +26,7 @@ export function Nav() {
       <NavLink to="/me"     style={({ isActive }) => isActive ? activeLink : link}>My Fluency</NavLink>
       <NavLink to="/public" style={({ isActive }) => isActive ? activeLink : link}>Pilot Results</NavLink>
       <NavLink to="/carbon" style={({ isActive }) => isActive ? activeLink : link}>Carbon 命</NavLink>
+      <NavLink to="/tam"    style={({ isActive }) => isActive ? activeLink : link}>Tâm 心</NavLink>
     </nav>
   );
 }

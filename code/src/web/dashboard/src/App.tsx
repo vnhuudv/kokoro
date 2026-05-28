@@ -5,6 +5,9 @@ import { PersonalView } from './pages/PersonalView';
 import { PublicView } from './pages/PublicView';
 import { CarbonView } from './pages/CarbonView';
 import { AdminCarbonView } from './pages/AdminCarbonView';
+import { TamFeed } from './pages/TamFeed';
+import { TamPost } from './pages/TamPost';
+import { TamLeaderboard } from './pages/TamLeaderboard';
 import { LoginView } from './pages/LoginView';
 import { AuthCallback } from './pages/AuthCallback';
 import { useAuth } from './hooks/useAuth';
@@ -32,6 +35,9 @@ export default function App() {
           <Route path="/public"       element={<PublicView />} />
           <Route path="/carbon"       element={<CarbonView />} />
           <Route path="/admin/carbon" element={<AdminCarbonView />} />
+          <Route path="/tam"             element={<TamFeed />} />
+          <Route path="/tam/new"         element={<TamPost />} />
+          <Route path="/tam/leaderboard" element={<TamLeaderboard />} />
         </Route>
       </Routes>
     </div>
