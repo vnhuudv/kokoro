@@ -138,6 +138,8 @@ export class MakotoService {
     userId: string,
     dto: AddCommentDto,
   ): Promise<MakotoComment> {
+    await this.getPost(postId, tenantId); // throws 404 if post doesn't exist/belong to tenant
+
     if (dto.parentId) {
       const { rows } = await this.pool.query<{ parentId: string | null }>(
         `SELECT parent_id AS "parentId" FROM makoto_comments WHERE id = $1 AND tenant_id = $2`,
@@ -179,6 +181,8 @@ export class MakotoService {
   }
 
   async toggleReaction(postId: string, tenantId: string, userId: string): Promise<MakotoReactionResult> {
+    await this.getPost(postId, tenantId); // throws 404 if post doesn't exist/belong to tenant
+
     const { rowCount } = await this.pool.query(
       `INSERT INTO makoto_reactions (tenant_id, post_id, user_id, reaction_type)
        VALUES ($1, $2, $3, 'like')

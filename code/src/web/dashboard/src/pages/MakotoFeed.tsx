@@ -105,10 +105,10 @@ export function MakotoFeed() {
   const articleQuery  = `/posts?tenantId=${TENANT_ID}&type=article&limit=50`;
 
   const { data: officialPosts, error: officialError } = useMakotoFetch<MakotoPost[]>(
-    typeFilter === 'article' ? '' : officialQuery,
+    typeFilter === 'article' ? null : officialQuery,
   );
   const { data: articlePosts, error: articleError } = useMakotoFetch<MakotoPost[]>(
-    typeFilter === 'official' ? '' : articleQuery,
+    typeFilter === 'official' ? null : articleQuery,
   );
 
   const filter = (posts: MakotoPost[] | null) => {

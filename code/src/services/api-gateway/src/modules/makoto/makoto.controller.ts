@@ -89,6 +89,7 @@ export class MakotoController {
   }
 
   @Post('posts/:id/reactions')
+  @HttpCode(201)
   async toggleReaction(
     @Param('id') id: string,
     @Query('tenantId') tenantId: string,

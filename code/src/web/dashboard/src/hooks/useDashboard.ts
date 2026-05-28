@@ -9,12 +9,17 @@ const API_BASES: Record<string, string> = {
 };
 
 function makeUseFetch(base: string) {
-  return function useFetch<T>(path: string) {
+  return function useFetch<T>(path: string | null) {
     const [data, setData] = useState<T | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+      if (!path) {
+        setData(null);
+        setLoading(false);
+        return;
+      }
       const token = getToken();
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;

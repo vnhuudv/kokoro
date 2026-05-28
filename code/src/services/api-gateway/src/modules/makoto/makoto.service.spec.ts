@@ -26,8 +26,9 @@ describe('MakotoService', () => {
   describe('toggleReaction', () => {
     it('returns liked:true and count:1 on first call (insert succeeds)', async () => {
       mockPool.query
-        .mockResolvedValueOnce({ rowCount: 1 })          // INSERT (inserted)
-        .mockResolvedValueOnce({ rows: [{ count: '1' }] }); // SELECT COUNT
+        .mockResolvedValueOnce({ rows: [{ id: 'post-1' }] }) // getPost guard
+        .mockResolvedValueOnce({ rowCount: 1 })               // INSERT (inserted)
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] });   // SELECT COUNT
 
       const result = await service.toggleReaction('post-1', 'tenant-1', 'user-1');
 
@@ -36,9 +37,10 @@ describe('MakotoService', () => {
 
     it('returns liked:false and count:0 on second call (conflict → delete)', async () => {
       mockPool.query
-        .mockResolvedValueOnce({ rowCount: 0 })          // INSERT (conflict)
-        .mockResolvedValueOnce({ rowCount: 1 })          // DELETE
-        .mockResolvedValueOnce({ rows: [{ count: '0' }] }); // SELECT COUNT
+        .mockResolvedValueOnce({ rows: [{ id: 'post-1' }] }) // getPost guard
+        .mockResolvedValueOnce({ rowCount: 0 })               // INSERT (conflict)
+        .mockResolvedValueOnce({ rowCount: 1 })               // DELETE
+        .mockResolvedValueOnce({ rows: [{ count: '0' }] });   // SELECT COUNT
 
       const result = await service.toggleReaction('post-1', 'tenant-1', 'user-1');
 
@@ -51,10 +53,12 @@ describe('MakotoService', () => {
   // ---------------------------------------------------------------------------
   describe('addComment', () => {
     it('throws BadRequestException when parentId points to an existing reply', async () => {
-      // parent comment itself has a parent_id set (depth > 1)
-      mockPool.query.mockResolvedValueOnce({
-        rows: [{ parentId: 'grandparent-id' }], // parent already has a parent
-      });
+      // getPost guard, then parent comment itself has a parent_id set (depth > 1)
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [{ id: 'post-1' }] }) // getPost guard
+        .mockResolvedValueOnce({
+          rows: [{ parentId: 'grandparent-id' }], // parent already has a parent
+        });
 
       await expect(
         service.addComment('post-1', 'tenant-1', 'user-1', {
@@ -62,21 +66,23 @@ describe('MakotoService', () => {
           parentId: 'parent-comment-id',
         }),
       ).rejects.toThrow(BadRequestException);
-      expect(mockPool.query).toHaveBeenCalledTimes(1);
+      expect(mockPool.query).toHaveBeenCalledTimes(2);
     });
 
     it('inserts a top-level comment when no parentId is given', async () => {
-      mockPool.query.mockResolvedValueOnce({
-        rows: [{
-          id: 'comment-1',
-          tenantId: 'tenant-1',
-          postId: 'post-1',
-          parentId: null,
-          authorUserId: 'user-1',
-          body: 'great article',
-          createdAt: new Date('2026-05-28'),
-        }],
-      });
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [{ id: 'post-1' }] }) // getPost guard
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 'comment-1',
+            tenantId: 'tenant-1',
+            postId: 'post-1',
+            parentId: null,
+            authorUserId: 'user-1',
+            body: 'great article',
+            createdAt: new Date('2026-05-28'),
+          }],
+        });
 
       const result = await service.addComment('post-1', 'tenant-1', 'user-1', {
         body: 'great article',
@@ -92,7 +98,9 @@ describe('MakotoService', () => {
     });
 
     it('throws NotFoundException when parentId does not exist', async () => {
-      mockPool.query.mockResolvedValueOnce({ rows: [] }); // parent comment not found
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [{ id: 'post-1' }] }) // getPost guard
+        .mockResolvedValueOnce({ rows: [] }); // parent comment not found
 
       await expect(
         service.addComment('post-1', 'tenant-1', 'user-1', {
