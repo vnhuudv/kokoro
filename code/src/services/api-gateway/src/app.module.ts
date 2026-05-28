@@ -8,6 +8,7 @@ import { DatabaseModule } from './modules/database/database.module';
 import { InochiModule } from './modules/inochi/inochi.module';
 import { NominicationModule } from './modules/nominication/nominication.module';
 import { TamModule } from './modules/tam/tam.module';
+import { MakotoModule } from './modules/makoto/makoto.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TamModule } from './modules/tam/tam.module';
     InochiModule,
     NominicationModule,
     TamModule,
+    MakotoModule,
   ],
 })
 export class AppModule {}
