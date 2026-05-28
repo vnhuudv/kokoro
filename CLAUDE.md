@@ -265,3 +265,14 @@ When requirements change after implementation has started:
 - After any task that adds new environment variables, diff `.env` against `.env.example` immediately and add the missing keys before the next smoke test.
 - When a NestJS app uses `app.setGlobalPrefix('api')`, all API routes are under `/api/...` — never test at the root path.
 - Container images built before a module was added to the application module registry must be rebuilt (`docker compose build <service>`) before smoke testing. A 404 on a new route is almost always a stale image.
+
+#### Lessons from Tâm module (2026-05-28)
+
+- **DTO field naming is a silent failure**: A mismatched field name between the frontend form (`actionLink`) and the API DTO (`externalUrl`) creates a post but silently drops the value — no error, no warning. Always cross-check the exact field names in the POST body against the service DTO before marking a form task complete.
+- **`SELECT COUNT(*) ... FOR UPDATE` is invalid in PostgreSQL**: Aggregate functions cannot be combined with `FOR UPDATE`. For first-action bonus idempotency, use a UNIQUE constraint on the actions table or accept advisory semantics — not row-level locking on a COUNT.
+- **Compute derived display values from joined data, not hardcoded literals**: `totalPoints` was initially `0::int` — a placeholder literal that passed review but broke the UI. When a query already JOINs a related table, compute summary fields (`COUNT(a.id) * 20`) rather than leaving a `0::int` stub.
+- **React SPA navigation: use `<Link>`, never `<a href>`**: Bare `<a href="/tam/...">` triggers full page reloads and drops client-side state. All internal navigation in the dashboard must use React Router's `<Link>` component.
+- **`head -n -1` is not portable**: BSD `head` (macOS) does not support negative line counts. Use `sed '$d'` to strip the last line in smoke scripts for macOS compatibility.
+- **Badge category filter requires a matching `category` column on `tam_points`**: Category-scoped badges (e.g., Climate Champion) need the point-award rows to carry a `category` field. Design the points table with `category` from the start whenever category-filtered recognition is in scope.
+- **Multiple `evaluateBadges` calls per action**: If `awardPoints` is called multiple times in one request (action pts + bonus pts + link-click pts), each call triggers badge evaluation. Extract `awardPointsNoEval` / private inner methods and call `evaluateBadges` exactly once at the end of the transaction.
+- **UNIQUE constraints on junction tables must include `tenant_id`**: `tam_link_clicks (post_id, user_id)` without `tenant_id` leaks deduplication across tenants. Every UNIQUE constraint on a multi-tenant table must include `tenant_id` as the first column.
