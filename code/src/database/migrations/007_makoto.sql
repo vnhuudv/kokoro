@@ -22,7 +22,7 @@ CREATE TRIGGER trg_makoto_posts_updated_at
 
 CREATE TABLE makoto_comments (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id       UUID NOT NULL,
+  tenant_id       UUID NOT NULL REFERENCES tenants(tenant_id),
   post_id         UUID NOT NULL REFERENCES makoto_posts(id) ON DELETE CASCADE,
   parent_id       UUID REFERENCES makoto_comments(id) ON DELETE CASCADE,
   author_user_id  TEXT NOT NULL,
@@ -34,7 +34,7 @@ CREATE INDEX idx_makoto_comments_post ON makoto_comments (post_id, created_at);
 
 CREATE TABLE makoto_reactions (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id      UUID NOT NULL,
+  tenant_id      UUID NOT NULL REFERENCES tenants(tenant_id),
   post_id        UUID NOT NULL REFERENCES makoto_posts(id) ON DELETE CASCADE,
   user_id        TEXT NOT NULL,
   reaction_type  TEXT NOT NULL DEFAULT 'like' CHECK (reaction_type IN ('like')),
