@@ -73,7 +73,7 @@ export class TamService {
          p.created_at      AS "createdAt",
          p.updated_at      AS "updatedAt",
          COUNT(a.id)::int  AS "actionCount",
-         0::int            AS "totalPoints"
+         (COUNT(a.id) * 20)::int AS "totalPoints"
        FROM tam_posts p
        LEFT JOIN tam_actions a ON a.post_id = p.id
        WHERE p.tenant_id = $1 ${categoryClause}
@@ -100,7 +100,7 @@ export class TamService {
          p.created_at      AS "createdAt",
          p.updated_at      AS "updatedAt",
          COUNT(a.id)::int  AS "actionCount",
-         0::int            AS "totalPoints"
+         (COUNT(a.id) * 20)::int AS "totalPoints"
        FROM tam_posts p
        LEFT JOIN tam_actions a ON a.post_id = p.id
        WHERE p.id = $1 AND p.tenant_id = $2

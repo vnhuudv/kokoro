@@ -96,7 +96,7 @@ export function TamPost() {
         description: description.trim(),
       };
       if (coverImage.trim()) body.coverImageUrl = coverImage.trim();
-      if (actionLink.trim()) body.actionLink = actionLink.trim();
+      if (actionLink.trim()) body.externalUrl = actionLink.trim();
 
       const res = await fetch(
         `${TAM_BASE}/posts?tenantId=${TENANT_ID}&userId=${encodeURIComponent(USER_ID)}`,
