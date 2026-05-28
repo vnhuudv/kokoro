@@ -172,7 +172,10 @@ export class MakotoService {
     );
     if (rows.length === 0) throw new NotFoundException('Comment not found');
     if (rows[0].authorUserId !== userId) throw new ForbiddenException("Cannot delete another user's comment");
-    await this.pool.query(`DELETE FROM makoto_comments WHERE id = $1`, [commentId]);
+    await this.pool.query(
+      `DELETE FROM makoto_comments WHERE id = $1 AND tenant_id = $2`,
+      [commentId, tenantId],
+    );
   }
 
   async toggleReaction(postId: string, tenantId: string, userId: string): Promise<MakotoReactionResult> {

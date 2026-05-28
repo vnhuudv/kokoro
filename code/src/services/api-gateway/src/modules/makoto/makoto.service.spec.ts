@@ -62,6 +62,7 @@ describe('MakotoService', () => {
           parentId: 'parent-comment-id',
         }),
       ).rejects.toThrow(BadRequestException);
+      expect(mockPool.query).toHaveBeenCalledTimes(1);
     });
 
     it('inserts a top-level comment when no parentId is given', async () => {
@@ -89,6 +90,17 @@ describe('MakotoService', () => {
         expect.arrayContaining(['tenant-1', 'post-1', null, 'user-1', 'great article']),
       );
     });
+
+    it('throws NotFoundException when parentId does not exist', async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [] }); // parent comment not found
+
+      await expect(
+        service.addComment('post-1', 'tenant-1', 'user-1', {
+          body: 'reply to ghost',
+          parentId: 'nonexistent-comment-id',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -106,7 +118,7 @@ describe('MakotoService', () => {
 
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM makoto_comments'),
-        expect.arrayContaining(['comment-1']),
+        expect.arrayContaining(['comment-1', 'tenant-1']),
       );
     });
 
