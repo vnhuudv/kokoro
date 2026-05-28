@@ -8,6 +8,9 @@ import { AdminCarbonView } from './pages/AdminCarbonView';
 import { TamFeed } from './pages/TamFeed';
 import { TamPost } from './pages/TamPost';
 import { TamLeaderboard } from './pages/TamLeaderboard';
+import { MakotoFeed } from './pages/MakotoFeed';
+import { MakotoPost } from './pages/MakotoPost';
+import { MakotoArticle } from './pages/MakotoArticle';
 import { LoginView } from './pages/LoginView';
 import { AuthCallback } from './pages/AuthCallback';
 import { useAuth } from './hooks/useAuth';
@@ -38,6 +41,9 @@ export default function App() {
           <Route path="/tam"             element={<TamFeed />} />
           <Route path="/tam/new"         element={<TamPost />} />
           <Route path="/tam/leaderboard" element={<TamLeaderboard />} />
+          <Route path="/makoto"          element={<MakotoFeed />} />
+          <Route path="/makoto/new"      element={<MakotoPost />} />
+          <Route path="/makoto/:id"      element={<MakotoArticle />} />
         </Route>
       </Routes>
     </div>

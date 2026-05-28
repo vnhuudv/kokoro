@@ -27,6 +27,7 @@ export function Nav() {
       <NavLink to="/public" style={({ isActive }) => isActive ? activeLink : link}>Pilot Results</NavLink>
       <NavLink to="/carbon" style={({ isActive }) => isActive ? activeLink : link}>Carbon 命</NavLink>
       <NavLink to="/tam"    style={({ isActive }) => isActive ? activeLink : link}>Tâm 心</NavLink>
+      <NavLink to="/makoto" style={({ isActive }) => isActive ? activeLink : link}>Makoto 誠</NavLink>
     </nav>
   );
 }

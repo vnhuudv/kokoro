@@ -5,6 +5,7 @@ const API_BASES: Record<string, string> = {
   dashboard: 'http://localhost:3000/api/dashboard',
   inochi:    'http://localhost:3000/api/inochi',
   tam:       'http://localhost:3000/api/tam',
+  makoto:    'http://localhost:3000/api/makoto',
 };
 
 function makeUseFetch(base: string) {
@@ -40,3 +41,5 @@ export const useFetch = makeUseFetch(API_BASES.dashboard);
 export const useInochiFetch = makeUseFetch(API_BASES.inochi);
 export const useTamFetch = makeUseFetch(API_BASES.tam);
 export const TAM_BASE = API_BASES.tam;
+export const useMakotoFetch = makeUseFetch(API_BASES.makoto);
+export const MAKOTO_BASE = API_BASES.makoto;
