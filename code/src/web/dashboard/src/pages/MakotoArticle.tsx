@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMakotoFetch, MAKOTO_BASE } from '../hooks/useDashboard';
 import { getToken } from '../hooks/useAuth';
+import { colors, pageWrap, primaryButton, radius } from '../theme';
 
 const TENANT_ID = 'a0000000-0000-0000-0000-000000000001';
 const USER_ID = 'U-DASHBOARD-USER';
@@ -28,27 +29,11 @@ interface MakotoComment {
   replies: MakotoComment[];
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '10px 12px',
-  fontSize: 14,
-  color: '#1e293b',
-  border: '1px solid #e2e8f0',
-  borderRadius: 6,
-  outline: 'none',
-  background: '#fff',
-  resize: 'vertical',
-};
-
-function Avatar({ userId }: { userId: string }) {
-  const initials = userId.slice(0, 2).toUpperCase();
+function Avatar({ initials, size = 28, accent = colors.primaryLight, textColor = colors.primary }: {
+  initials: string; size?: number; accent?: string; textColor?: string;
+}) {
   return (
-    <div style={{
-      width: 28, height: 28, background: '#e2e8f0', borderRadius: '50%',
-      flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 11, color: '#64748b', fontWeight: 600,
-    }}>
+    <div style={{ width: size, height: size, background: accent, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.36, fontWeight: 700, color: textColor }}>
       {initials}
     </div>
   );
@@ -75,81 +60,65 @@ function CommentItem({
   }
 
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', gap: 10 }}>
-        <Avatar userId={comment.authorUserId} />
-        <div style={{ flex: 1 }}>
-          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>
-              {comment.authorUserId}{' '}
-              <span style={{ fontWeight: 400, color: '#94a3b8' }}>
-                · {new Date(comment.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            <div style={{ fontSize: 13, color: '#334155', marginTop: 4 }}>{comment.body}</div>
+    <div key={comment.id} style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+      <Avatar initials={comment.authorUserId.slice(0, 2).toUpperCase()} />
+      <div style={{ flex: 1 }}>
+        <div style={{ background: colors.canvasBg, border: `1px solid ${colors.border}`, borderRadius: radius.button, padding: '10px 12px' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textBody }}>
+            {comment.authorUserId} <span style={{ fontWeight: 400, color: colors.textMuted }}>· {new Date(comment.createdAt).toLocaleDateString()}</span>
           </div>
-          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4, paddingLeft: 4 }}>
-            <button
-              onClick={() => setReplyOpen(v => !v)}
-              style={{ background: 'none', border: 'none', color: '#0ea5a0', cursor: 'pointer', fontSize: 12, padding: 0 }}
-            >
-              Reply
-            </button>
-          </div>
-
-          {replyOpen && (
-            <div style={{ marginTop: 8 }}>
-              <textarea
-                value={replyBody}
-                onChange={e => setReplyBody(e.target.value)}
-                rows={2}
-                style={inputStyle}
-                placeholder="Write a reply…"
-              />
-              <div style={{ display: 'flex', gap: 8, marginTop: 6, justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => setReplyOpen(false)}
-                  style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f1f5f9', color: '#334155', fontSize: 12, cursor: 'pointer' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReply}
-                  disabled={submitting}
-                  style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: '#0ea5a0', color: '#fff', fontSize: 12, cursor: 'pointer' }}
-                >
-                  {submitting ? 'Posting…' : 'Reply'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Replies */}
-          {comment.replies.map(reply => (
-            <div key={reply.id} style={{ marginTop: 10, marginLeft: 20 }}>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <div style={{
-                  width: 24, height: 24, background: '#e2e8f0', borderRadius: '50%',
-                  flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, color: '#64748b', fontWeight: 600,
-                }}>
-                  {reply.authorUserId.slice(0, 2).toUpperCase()}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>
-                      {reply.authorUserId}{' '}
-                      <span style={{ fontWeight: 400, color: '#94a3b8' }}>
-                        · {new Date(reply.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 13, color: '#334155', marginTop: 4 }}>{reply.body}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+          <div style={{ fontSize: 13, color: colors.textBody, marginTop: 4 }}>{comment.body}</div>
         </div>
+        <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, paddingLeft: 4 }}>
+          <span style={{ color: colors.primary, cursor: 'pointer', fontWeight: 600 }} onClick={() => setReplyOpen(v => !v)}>Reply</span>
+        </div>
+
+        {replyOpen && (
+          <div style={{ marginTop: 8 }}>
+            <textarea
+              value={replyBody}
+              onChange={e => setReplyBody(e.target.value)}
+              rows={2}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: radius.input, border: `1px solid ${colors.border}`, fontSize: 13, fontFamily: 'inherit', color: colors.textBody, resize: 'vertical', boxSizing: 'border-box' as const }}
+              placeholder="Write a reply…"
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 6, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setReplyOpen(false)}
+                style={{ padding: '4px 12px', borderRadius: radius.button, border: `1px solid ${colors.border}`, background: colors.canvasBg, color: colors.textBody, fontSize: 12, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReply}
+                disabled={submitting}
+                style={{ ...primaryButton, padding: '4px 12px', fontSize: 12 }}
+              >
+                {submitting ? 'Posting…' : 'Reply'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Replies */}
+        {comment.replies.map(reply => (
+          <div key={reply.id} style={{ marginTop: 10, marginLeft: 20 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Avatar initials={reply.authorUserId.slice(0, 2).toUpperCase()} size={24} />
+              <div style={{ flex: 1 }}>
+                <div style={{ background: colors.canvasBg, border: `1px solid ${colors.border}`, borderRadius: radius.button, padding: '8px 12px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: colors.textBody }}>
+                    {reply.authorUserId}{' '}
+                    <span style={{ fontWeight: 400, color: colors.textMuted }}>
+                      · {new Date(reply.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 13, color: colors.textBody, marginTop: 4 }}>{reply.body}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -219,39 +188,32 @@ export function MakotoArticle() {
     setSubmittingComment(false);
   }
 
-  if (postLoading) return <div style={{ padding: 40, color: '#94a3b8' }}>Loading…</div>;
-  if (postError || !post) return <div style={{ padding: 40, color: '#dc2626' }}>Post not found.</div>;
+  if (postLoading) return <div style={{ padding: 40, color: colors.textMuted }}>Loading…</div>;
+  if (postError || !post) return <div style={{ padding: 40, color: colors.danger }}>Post not found.</div>;
 
   return (
-    <main style={{ background: '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px' }}>
+    <main style={{ ...pageWrap }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
-        <Link to="/makoto" style={{ fontSize: 13, color: '#0ea5a0', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
+        <Link to="/makoto" style={{ fontSize: 13, color: colors.primary, textDecoration: 'none', fontWeight: 600, display: 'inline-block', marginBottom: 20 }}>
           ← Back to Makoto
         </Link>
 
-        {/* Article header */}
+        {/* Post type badge + title */}
         <div style={{ marginBottom: 20 }}>
-          <span style={{
-            fontSize: 10, fontWeight: 700,
-            color: post.postType === 'official' ? '#ea580c' : '#0ea5a0',
-            textTransform: 'uppercase', letterSpacing: '.05em',
-            background: post.postType === 'official' ? '#ffedd5' : '#f0fdfb',
-            padding: '2px 7px', borderRadius: 4,
-          }}>
-            {post.postType === 'official' ? 'Official' : 'Article'}
+          <span style={{ fontSize: 10, fontWeight: 700, color: colors.primary, background: colors.primaryLight, padding: '2px 7px', borderRadius: radius.badge, textTransform: 'uppercase' as const, letterSpacing: '.05em' }}>
+            {post.postType === 'official' ? '📌 Official' : '📝 Article'}
           </span>
-          <h1 style={{ margin: '10px 0 6px', color: '#1e293b', fontSize: 22, fontWeight: 700 }}>{post.title}</h1>
-          <div style={{ fontSize: 13, color: '#64748b' }}>
-            {post.authorUserId} · {new Date(post.createdAt).toLocaleDateString()}
-          </div>
+          <h2 style={{ margin: '10px 0 6px', fontSize: 20, fontWeight: 800, color: colors.textHeading }}>{post.title}</h2>
+          <div style={{ fontSize: 12, color: colors.textSecondary }}>{post.authorUserId} · {new Date(post.createdAt).toLocaleDateString()}</div>
+
           {post.postType === 'official' && post.metricRefs && post.metricRefs.length > 0 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
               {post.metricRefs.map(ref => (
                 <span key={ref} style={{
-                  fontSize: 11, fontWeight: 600, color: '#0ea5a0',
-                  background: '#f0fdfb', border: '1px solid #99f6e4',
-                  padding: '2px 8px', borderRadius: 12,
+                  fontSize: 11, fontWeight: 600, color: colors.primary,
+                  background: colors.primaryLight, border: `1px solid ${colors.primaryRing}`,
+                  padding: '2px 8px', borderRadius: radius.pill,
                 }}>
                   📊 {ref === 'en_score' ? 'En Score' : ref === 'carbon' ? 'Carbon' : ref}
                 </span>
@@ -261,40 +223,31 @@ export function MakotoArticle() {
         </div>
 
         {/* Article body */}
-        <div style={{
-          fontSize: 15, color: '#334155', lineHeight: 1.8,
-          marginBottom: 24, borderBottom: '1px solid #e2e8f0', paddingBottom: 24,
-          whiteSpace: 'pre-wrap',
-        }}>
+        <div style={{ fontSize: 14, color: colors.textBody, lineHeight: 1.7, marginBottom: 24, paddingBottom: 24, borderBottom: `1px solid ${colors.border}`, whiteSpace: 'pre-wrap' }}>
           {post.body}
         </div>
 
-        {/* Reactions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+        {/* Reactions bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <button
             onClick={handleToggleLike}
             style={{
-              padding: '6px 16px', borderRadius: 6, cursor: 'pointer',
-              border: `1px solid ${displayLiked ? '#0ea5a0' : '#e2e8f0'}`,
-              background: displayLiked ? '#f0fdfb' : '#fff',
-              color: displayLiked ? '#0ea5a0' : '#64748b',
-              fontSize: 13, fontWeight: displayLiked ? 600 : 400,
+              ...primaryButton,
+              background: displayLiked ? colors.primary : colors.cardBg,
+              color:      displayLiked ? '#fff'          : colors.primary,
+              border:     `1px solid ${colors.primary}`,
             }}
           >
             👍 Like · {displayLikeCount}
           </button>
-          <span style={{ fontSize: 13, color: '#94a3b8' }}>
-            💬 {displayComments.length} comments
-          </span>
+          <span style={{ fontSize: 13, color: colors.textMuted }}>💬 {displayComments.length} comments</span>
         </div>
 
         {/* Comments */}
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 14 }}>
-            Comments ({displayComments.length})
-          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: colors.textBody, marginBottom: 16 }}>Comments</div>
 
-          {commentsLoading && <div style={{ fontSize: 13, color: '#94a3b8' }}>Loading comments…</div>}
+          {commentsLoading && <div style={{ fontSize: 13, color: colors.textMuted }}>Loading comments…</div>}
 
           {displayComments.map(c => (
             <CommentItem
@@ -306,27 +259,25 @@ export function MakotoArticle() {
 
           {/* Add comment */}
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <Avatar userId={USER_ID} />
+            <Avatar initials={USER_ID.slice(0, 2).toUpperCase()} />
             <div style={{ flex: 1 }}>
-              <textarea
-                value={commentBody}
-                onChange={e => setCommentBody(e.target.value)}
-                rows={2}
-                style={inputStyle}
-                placeholder="Add a comment…"
-              />
-              <div style={{ textAlign: 'right', marginTop: 6 }}>
-                <button
-                  onClick={() => handleAddComment()}
-                  disabled={submittingComment || !commentBody.trim()}
-                  style={{
-                    padding: '6px 16px', borderRadius: 6, border: 'none',
-                    background: submittingComment ? '#7dd3cf' : '#0ea5a0',
-                    color: '#fff', fontSize: 13, cursor: 'pointer',
-                  }}
-                >
-                  {submittingComment ? 'Posting…' : 'Post'}
-                </button>
+              <div style={{ marginTop: 16 }}>
+                <textarea
+                  value={commentBody}
+                  onChange={e => setCommentBody(e.target.value)}
+                  placeholder="Add a comment..."
+                  rows={2}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: radius.input, border: `1px solid ${colors.border}`, fontSize: 13, fontFamily: 'inherit', color: colors.textBody, resize: 'vertical', boxSizing: 'border-box' as const }}
+                />
+                <div style={{ textAlign: 'right', marginTop: 6 }}>
+                  <button
+                    onClick={() => handleAddComment()}
+                    disabled={submittingComment || !commentBody.trim()}
+                    style={{ ...primaryButton, background: submittingComment ? colors.primaryRing : colors.primary }}
+                  >
+                    {submittingComment ? 'Posting…' : 'Post'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
