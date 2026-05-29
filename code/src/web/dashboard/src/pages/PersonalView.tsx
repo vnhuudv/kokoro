@@ -1,28 +1,20 @@
 import { useState } from 'react';
 import { useFetch } from '../hooks/useDashboard';
+import { colors, card, pageWrap, pageTitle, labelStyle, radius } from '../theme';
 
 interface PersonalMetrics {
-  fluency_score: number;
-  fluency_delta: number;
+  fluency_score:          number;
+  fluency_delta:          number;
   annotations_this_month: number;
-  suggestions_used: number;
-  suggestions_total: number;
-  patterns_mastered: string[];
+  suggestions_used:       number;
+  suggestions_total:      number;
+  patterns_mastered:      string[];
 }
 
-const card: React.CSSProperties = {
-  background: '#fff',
-  borderRadius: 8,
-  padding: '24px 28px',
-  borderLeft: '4px solid #0ea5a0',
-  boxShadow: '0 1px 3px rgba(0,0,0,.06)',
-  marginBottom: 16,
-};
-
-function ProgressBar({ value }: { value: number }) {
+function ProgressBar({ value, accent }: { value: number; accent: string }) {
   return (
-    <div style={{ background: '#f1f5f9', borderRadius: 8, height: 14, overflow: 'hidden', marginTop: 8 }}>
-      <div style={{ width: `${value}%`, height: '100%', background: '#0ea5a0', borderRadius: 8, transition: 'width .4s ease' }} />
+    <div style={{ background: colors.primaryLight, borderRadius: radius.pill, height: 8, overflow: 'hidden', marginTop: 10 }}>
+      <div style={{ width: `${value}%`, height: '100%', background: accent, borderRadius: radius.pill, transition: 'width .4s ease' }} />
     </div>
   );
 }
@@ -31,79 +23,98 @@ export function PersonalView() {
   const { data, loading } = useFetch<PersonalMetrics>('/personal');
   const [showHistory, setShowHistory] = useState(false);
 
-  if (loading) return <div style={{ padding: 40, color: '#64748b' }}>Loading…</div>;
+  if (loading) {
+    return <div style={{ ...pageWrap, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ color: colors.textMuted, fontSize: 14 }}>Loading…</span>
+    </div>;
+  }
 
   const usageRate = data && data.suggestions_total > 0
     ? Math.round((data.suggestions_used / data.suggestions_total) * 100)
     : 0;
 
   return (
-    <main style={{ background: '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 40px' }}>
-      <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#1e293b' }}>My Fluency</h1>
-      <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 28 }}>Pilot Week 8</div>
-
-      {/* Fluency score */}
-      <div style={card}>
-        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Fluency score</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          <span style={{ fontSize: 44, fontWeight: 700, color: '#1e293b' }}>{data?.fluency_score}%</span>
-          {(data?.fluency_delta ?? 0) > 0 && (
-            <span style={{ fontSize: 14, color: '#0ea5a0' }}>+{data?.fluency_delta}% from start</span>
-          )}
-        </div>
-        <ProgressBar value={data?.fluency_score ?? 0} />
+    <main style={pageWrap}>
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={pageTitle}>My Fluency</h1>
+        <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>Pilot Week 8</div>
       </div>
 
-      {/* Activity stats */}
-      <div style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 30, fontWeight: 700, color: '#1e293b' }}>{data?.annotations_this_month}</div>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Annotations this month</div>
+      <div style={{ maxWidth: 680 }}>
+        {/* Fluency score card */}
+        <div style={{ ...card, marginBottom: 12 }}>
+          <div style={labelStyle}>Fluency Score</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+            <span style={{ fontSize: 48, fontWeight: 800, color: colors.primary, lineHeight: 1 }}>{data?.fluency_score}%</span>
+            {(data?.fluency_delta ?? 0) > 0 && (
+              <span style={{ fontSize: 13, color: colors.success, fontWeight: 600 }}>▲ +{data?.fluency_delta}% from start</span>
+            )}
+          </div>
+          <ProgressBar value={data?.fluency_score ?? 0} accent={colors.primary} />
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 30, fontWeight: 700, color: '#1e293b' }}>{data?.suggestions_used}</div>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Suggestions used ({usageRate}%)</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 30, fontWeight: 700, color: '#1e293b' }}>{data?.patterns_mastered.length}</div>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Patterns mastered</div>
-        </div>
-      </div>
 
-      {/* Patterns mastered */}
-      {(data?.patterns_mastered.length ?? 0) > 0 && (
-        <div style={{ ...card, borderLeft: 'none' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Patterns I've mastered</div>
-          {(data?.patterns_mastered ?? []).map((p, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: 14, color: '#334155' }}>
-              <span style={{ color: '#0ea5a0', fontWeight: 700 }}>✓</span>
-              {p}
-            </div>
-          ))}
+        {/* Activity stats */}
+        <div style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 12 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 32, fontWeight: 800, color: colors.en }}>{data?.annotations_this_month}</div>
+            <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>Annotations this month</div>
+          </div>
+          <div style={{ textAlign: 'center', borderLeft: `1px solid ${colors.border}`, borderRight: `1px solid ${colors.border}` }}>
+            <div style={{ fontSize: 32, fontWeight: 800, color: colors.carbon }}>{data?.suggestions_used}</div>
+            <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>Suggestions used ({usageRate}%)</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 32, fontWeight: 800, color: colors.tam }}>{data?.patterns_mastered.length}</div>
+            <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>Patterns mastered</div>
+          </div>
         </div>
-      )}
 
-      {/* Annotation history */}
-      <div style={{ ...card, borderLeft: 'none' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showHistory ? 16 : 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Annotation history</div>
-          <button
-            onClick={() => setShowHistory(h => !h)}
-            style={{ fontSize: 13, color: '#0ea5a0', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
-          >
-            {showHistory ? 'Hide ▴' : 'View ▾'}
-          </button>
+        {/* Suggestion usage bar */}
+        <div style={{ ...card, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={labelStyle}>Suggestion Adoption Rate</div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: colors.carbon }}>{usageRate}%</span>
+          </div>
+          <ProgressBar value={usageRate} accent={colors.carbon} />
+          <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 8 }}>
+            {data?.suggestions_used} of {data?.suggestions_total} suggestions adopted
+          </div>
         </div>
-        {showHistory && (
-          <div style={{ fontSize: 14, color: '#64748b', background: '#f8fafc', padding: '16px', borderRadius: 6, textAlign: 'center' }}>
-            Full annotation history will be available in the next release.
-            <div style={{ marginTop: 8, fontSize: 12, color: '#94a3b8' }}>
-              Your data is stored privately and not visible to team leads.
-            </div>
+
+        {/* Patterns mastered */}
+        {(data?.patterns_mastered.length ?? 0) > 0 && (
+          <div style={{ ...card, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: colors.textBody, marginBottom: 12 }}>Patterns I've mastered</div>
+            {(data?.patterns_mastered ?? []).map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: `1px solid ${colors.border}`, fontSize: 13, color: colors.textBody }}>
+                <span style={{ width: 20, height: 20, background: colors.primaryLight, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: colors.primary, fontWeight: 700, flexShrink: 0 }}>✓</span>
+                {p}
+              </div>
+            ))}
           </div>
         )}
-      </div>
+
+        {/* Annotation history */}
+        <div style={card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showHistory ? 14 : 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: colors.textBody }}>Annotation History</div>
+            <button
+              onClick={() => setShowHistory(h => !h)}
+              style={{ fontSize: 12, color: colors.primary, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+            >
+              {showHistory ? 'Hide ▴' : 'View ▾'}
+            </button>
+          </div>
+          {showHistory && (
+            <div style={{ fontSize: 13, color: colors.textSecondary, background: colors.canvasBg, padding: '14px 16px', borderRadius: radius.button, textAlign: 'center' }}>
+              Full annotation history will be available in the next release.
+              <div style={{ marginTop: 8, fontSize: 11, color: colors.textMuted }}>
+                Your data is stored privately and not visible to team leads.
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
