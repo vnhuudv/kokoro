@@ -1,6 +1,7 @@
 // code/src/web/dashboard/src/pages/AdminCarbonView.tsx
 import { useState } from 'react';
 import { useInochiFetch } from '../hooks/useDashboard';
+import { colors, card, pageWrap, pageTitle, labelStyle, radius } from '../theme';
 
 interface OffsetRecord {
   id: string;
@@ -24,15 +25,10 @@ interface CompanyCarbonSummary {
 
 const INOCHI_API = 'http://localhost:3000/api/inochi';
 
-const card: React.CSSProperties = {
-  background: '#fff', borderRadius: 8, padding: '20px 24px',
-  boxShadow: '0 1px 3px rgba(0,0,0,.06)', marginBottom: 16,
-};
-
 const inputStyle: React.CSSProperties = {
   display: 'block', width: '100%', marginTop: 4,
-  padding: '6px 10px', borderRadius: 6,
-  border: '1px solid #e2e8f0', fontSize: 13, boxSizing: 'border-box',
+  padding: '6px 10px', borderRadius: radius.input,
+  border: `1px solid ${colors.border}`, fontSize: 13, boxSizing: 'border-box',
 };
 
 const FORM_FIELDS: { field: string; label: string; required?: boolean; type?: string }[] = [
@@ -60,8 +56,8 @@ export function AdminCarbonView() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  if (loading) return <div style={{ padding: 40, color: '#64748b' }}>Loading…</div>;
-  if (error) return <div style={{ padding: 40, color: '#ef4444' }}>Failed to load carbon data.</div>;
+  if (loading) return <div style={{ ...pageWrap, color: colors.textSecondary }}>Loading…</div>;
+  if (error) return <div style={{ ...pageWrap, color: colors.danger }}>Failed to load carbon data.</div>;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,33 +90,34 @@ export function AdminCarbonView() {
   };
 
   return (
-    <main style={{ background: '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 40px' }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700, color: '#1e293b' }}>
-          命 Company AI Carbon — {data?.period_month}
-        </h1>
-        <div style={{ fontSize: 14, color: '#94a3b8' }}>Admin view — all teams</div>
+    <main style={pageWrap}>
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: colors.carbonLight, color: colors.carbon, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: radius.pill, marginBottom: 8 }}>
+          命 INOCHI PILLAR
+        </div>
+        <h1 style={{ ...pageTitle, color: colors.carbon }}>Company AI Carbon · {data?.period_month}</h1>
+        <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>Admin view — all teams</div>
       </div>
 
       {/* Summary stats */}
       {data && (
-        <div style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: '4px solid #34d399' }}>
+        <div style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 12, borderTop: `4px solid ${colors.carbon}` }}>
           <div style={{ textAlign: 'center', padding: '20px 12px' }}>
-            <div style={{ fontSize: 36, fontWeight: 800, color: '#059669' }}>{data.total_kg_co2e.toFixed(2)}</div>
-            <div style={{ fontSize: 13, color: '#1e293b', marginTop: 6, fontWeight: 600 }}>kg CO₂e total</div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>mixed sources</div>
+            <div style={{ fontSize: 36, fontWeight: 800, color: colors.carbon }}>{data.total_kg_co2e.toFixed(2)}</div>
+            <div style={{ fontSize: 13, color: colors.textBody, marginTop: 6, fontWeight: 600 }}>kg CO₂e total</div>
+            <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>mixed sources</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '20px 12px', borderLeft: '1px solid #f1f5f9', borderRight: '1px solid #f1f5f9' }}>
-            <div style={{ fontSize: 36, fontWeight: 800, color: '#059669' }}>{(data.total_tokens / 1_000_000).toFixed(1)}M</div>
-            <div style={{ fontSize: 13, color: '#1e293b', marginTop: 6, fontWeight: 600 }}>tokens this month</div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>mixed sources</div>
+          <div style={{ textAlign: 'center', padding: '20px 12px', borderLeft: `1px solid ${colors.border}`, borderRight: `1px solid ${colors.border}` }}>
+            <div style={{ fontSize: 36, fontWeight: 800, color: colors.carbon }}>{(data.total_tokens / 1_000_000).toFixed(1)}M</div>
+            <div style={{ fontSize: 13, color: colors.textBody, marginTop: 6, fontWeight: 600 }}>tokens this month</div>
+            <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>mixed sources</div>
           </div>
           <div style={{ textAlign: 'center', padding: '20px 12px' }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: data.offset_covered ? '#059669' : '#f59e0b' }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: data.offset_covered ? colors.carbon : colors.warning }}>
               {data.offset_covered ? '✓ Covered' : '⚠ Pending'}
             </div>
-            <div style={{ fontSize: 13, color: '#1e293b', marginTop: 6, fontWeight: 600 }}>offset status</div>
+            <div style={{ fontSize: 13, color: colors.textBody, marginTop: 6, fontWeight: 600 }}>offset status</div>
           </div>
         </div>
       )}
@@ -128,20 +125,20 @@ export function AdminCarbonView() {
       {/* Offset records */}
       <div style={card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Offset purchases</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: colors.textBody }}>Offset purchases</div>
           <button
             onClick={() => setShowForm(s => !s)}
-            style={{ fontSize: 13, background: '#0ea5a0', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer' }}
+            style={{ fontSize: 13, background: colors.carbon, color: '#fff', border: 'none', borderRadius: radius.button, padding: '6px 14px', cursor: 'pointer' }}
           >
             {showForm ? 'Cancel' : '+ Record purchase'}
           </button>
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} style={{ background: '#f8fafc', borderRadius: 8, padding: 16, marginBottom: 16, display: 'grid', gap: 10 }}>
+          <form onSubmit={handleSubmit} style={{ background: colors.canvasBg, borderRadius: radius.card, padding: 16, marginBottom: 16, display: 'grid', gap: 10 }}>
             {FORM_FIELDS.map(({ field, label, required, type }) => (
-              <label key={field} style={{ fontSize: 13, color: '#334155' }}>
-                {label}{required && <span style={{ color: '#ef4444' }}> *</span>}
+              <label key={field} style={{ ...labelStyle, fontSize: 13, color: colors.textSecondary }}>
+                {label}{required && <span style={{ color: colors.danger }}> *</span>}
                 <input
                   type={type || 'text'}
                   value={form[field]}
@@ -152,7 +149,7 @@ export function AdminCarbonView() {
                 />
               </label>
             ))}
-            <label style={{ fontSize: 13, color: '#334155' }}>
+            <label style={{ ...labelStyle, fontSize: 13, color: colors.textSecondary }}>
               Provider *
               <select
                 value={form.provider}
@@ -168,35 +165,34 @@ export function AdminCarbonView() {
             <button
               type="submit"
               disabled={submitting}
-              style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 13, opacity: submitting ? 0.6 : 1 }}
+              style={{ background: colors.carbon, color: '#fff', border: 'none', borderRadius: radius.button, padding: '8px 16px', cursor: 'pointer', fontSize: 13, opacity: submitting ? 0.6 : 1 }}
             >
               {submitting ? 'Saving…' : 'Save offset record'}
             </button>
             {submitError && (
-              <div style={{ color: '#ef4444', fontSize: 13, marginTop: 4 }}>{submitError}</div>
+              <div style={{ color: colors.danger, fontSize: 13, marginTop: 4 }}>{submitError}</div>
             )}
           </form>
         )}
 
         {!offsetLoading && (!offsets || offsets.length === 0) && (
-          <div style={{ fontSize: 14, color: '#94a3b8' }}>No offset purchases recorded yet.</div>
+          <div style={{ fontSize: 14, color: colors.textMuted }}>No offset purchases recorded yet.</div>
         )}
         {offsets?.map(o => (
           <div key={o.id} style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 0', borderBottom: '1px solid #f1f5f9', fontSize: 14,
+            padding: '12px 0', borderBottom: `1px solid ${colors.border}`, fontSize: 14,
           }}>
             <div>
-              <span style={{ color: '#334155', fontWeight: 600 }}>{Number(o.kg_co2e).toFixed(2)} kg CO₂e</span>
-              {o.cert_id && <span style={{ color: '#94a3b8', marginLeft: 8 }}>{o.provider} #{o.cert_id}</span>}
+              <span style={{ color: colors.textBody, fontWeight: 600 }}>{Number(o.kg_co2e).toFixed(2)} kg CO₂e</span>
+              {o.cert_id && <span style={{ color: colors.textMuted, marginLeft: 8 }}>{o.provider} #{o.cert_id}</span>}
             </div>
-            <div style={{ color: '#94a3b8', fontSize: 12 }}>
+            <div style={{ color: colors.textMuted, fontSize: 12 }}>
               {o.covers_from} → {o.covers_to}
-              {o.cost_usd != null && <span style={{ marginLeft: 8, color: '#059669' }}>${o.cost_usd}</span>}
+              {o.cost_usd != null && <span style={{ marginLeft: 8, color: colors.carbon }}>${o.cost_usd}</span>}
             </div>
           </div>
         ))}
-      </div>
       </div>
     </main>
   );
