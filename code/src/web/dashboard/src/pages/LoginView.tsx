@@ -80,7 +80,7 @@ export function LoginView() {
             fontSize:       15,
             textDecoration: 'none',
             width:          '100%',
-            boxSizing:      'border-box' as const,
+            boxSizing:      'border-box',
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
