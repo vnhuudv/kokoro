@@ -118,7 +118,7 @@ export function Nav() {
       <NavItem to="/public"       label="Pilot Results"  icon={<IconChart />} expanded={expanded} />
 
       {/* Divider */}
-      <div style={{ height: 1, background: '#312e81', margin: '8px 0' }} />
+      <div style={{ height: 1, background: colors.sidebarActive, margin: '8px 0' }} />
       {expanded && (
         <div style={{ fontSize: 9, color: colors.sidebarIcon, letterSpacing: '.1em', textTransform: 'uppercase', padding: '0 10px', marginBottom: 2 }}>
           Pillars
@@ -139,7 +139,7 @@ export function Nav() {
       {/* User footer */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        paddingTop: 12, borderTop: '1px solid #312e81', overflow: 'hidden',
+        paddingTop: 12, borderTop: `1px solid ${colors.sidebarActive}`, overflow: 'hidden',
       }}>
         <div style={{
           width: 28, height: 28, background: colors.primaryHover, borderRadius: '50%', flexShrink: 0,
