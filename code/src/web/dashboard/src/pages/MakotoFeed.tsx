@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMakotoFetch } from '../hooks/useDashboard';
+import { colors, card, pageWrap, pageTitle, radius, primaryButton } from '../theme';
 
 const TENANT_ID = 'a0000000-0000-0000-0000-000000000001';
 
@@ -17,48 +18,17 @@ interface MakotoPost {
   createdAt: string;
 }
 
-const card: React.CSSProperties = {
-  background: '#fff',
-  borderRadius: 8,
-  padding: '14px 16px',
-  marginBottom: 8,
-  boxShadow: '0 1px 3px rgba(0,0,0,.04)',
-};
-
-const officialCard: React.CSSProperties = {
-  ...card,
-  background: '#fff7ed',
-  border: '1px solid #fed7aa',
-};
-
-const articleCard: React.CSSProperties = {
-  ...card,
-  border: '1px solid #e2e8f0',
-};
-
-const typeBadge = (postType: 'official' | 'article'): React.CSSProperties => ({
-  fontSize: 10,
-  fontWeight: 700,
-  color: postType === 'official' ? '#ea580c' : '#0ea5a0',
-  textTransform: 'uppercase',
-  letterSpacing: '.05em',
-  background: postType === 'official' ? '#ffedd5' : '#f0fdfb',
-  padding: '2px 7px',
-  borderRadius: 4,
-});
-
 function MetricChips({ refs }: { refs: string[] }) {
   const labels: Record<string, string> = {
     en_score: 'En Score',
     carbon: 'Carbon',
   };
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, marginTop: 8 }}>
       {refs.map(ref => (
         <span key={ref} style={{
-          fontSize: 11, fontWeight: 600, color: '#0ea5a0',
-          background: '#f0fdfb', border: '1px solid #99f6e4',
-          padding: '2px 8px', borderRadius: 12,
+          fontSize: 11, background: colors.primaryLight, color: colors.primary,
+          padding: '2px 8px', borderRadius: radius.badge, fontWeight: 600,
         }}>
           📊 {labels[ref] ?? ref}
         </span>
@@ -70,26 +40,47 @@ function MetricChips({ refs }: { refs: string[] }) {
 function PostCard({ post }: { post: MakotoPost }) {
   const isOfficial = post.postType === 'official';
   return (
-    <div style={isOfficial ? officialCard : articleCard}>
-      <span style={typeBadge(post.postType)}>
-        {isOfficial ? 'Official' : 'Article'}
-      </span>
-      <div style={{ fontWeight: 700, color: '#1e293b', fontSize: 14, marginTop: 6 }}>
-        {post.title}
+    <div style={{
+      ...card,
+      marginBottom: 10,
+      borderLeft: isOfficial ? `3px solid ${colors.tam}` : `3px solid ${colors.primary}`,
+      background: isOfficial ? '#fffbeb' : colors.cardBg,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        {isOfficial ? (
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: '#ea580c', background: '#ffedd5',
+            padding: '2px 7px', borderRadius: radius.badge,
+            textTransform: 'uppercase' as const, letterSpacing: '.05em',
+          }}>
+            📌 Official
+          </span>
+        ) : (
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: colors.primary, background: colors.primaryLight,
+            padding: '2px 7px', borderRadius: radius.badge,
+            textTransform: 'uppercase' as const, letterSpacing: '.05em',
+          }}>
+            📝 Article
+          </span>
+        )}
+        <span style={{ fontSize: 11, color: colors.textMuted }}>
+          {post.authorUserId} · {new Date(post.createdAt).toLocaleDateString()}
+        </span>
       </div>
-      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-        {post.authorUserId} · {new Date(post.createdAt).toLocaleDateString()}
+      <div style={{ fontSize: 14, fontWeight: 700, color: colors.textBody }}>
+        {post.title}
       </div>
       {isOfficial && post.metricRefs && post.metricRefs.length > 0 && (
         <MetricChips refs={post.metricRefs} />
       )}
-      <div style={{ fontSize: 12, color: '#475569', marginTop: 6, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 8, lineHeight: 1.55 }}>
         {post.body.length > 160 ? post.body.slice(0, 160) + '…' : post.body}
       </div>
-      <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: 12, color: '#94a3b8' }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: 12, color: colors.textMuted }}>
         <span>👍 {post.likeCount}</span>
         <span>💬 {post.commentCount} comments</span>
-        <Link to={`/makoto/${post.id}`} style={{ color: '#0ea5a0', textDecoration: 'none' }}>
+        <Link to={`/makoto/${post.id}`} style={{ marginLeft: 'auto', color: colors.primary, fontWeight: 600, textDecoration: 'none' }}>
           Read more →
         </Link>
       </div>
@@ -104,6 +95,7 @@ export function MakotoFeed() {
   const officialQuery = `/posts?tenantId=${TENANT_ID}&type=official&limit=10`;
   const articleQuery  = `/posts?tenantId=${TENANT_ID}&type=article&limit=50`;
 
+  // CRITICAL: null-path guard — pass null to skip fetch when filter excludes that type
   const { data: officialPosts, error: officialError } = useMakotoFetch<MakotoPost[]>(
     typeFilter === 'article' ? null : officialQuery,
   );
@@ -120,78 +112,91 @@ export function MakotoFeed() {
   const filteredOfficial = filter(officialPosts);
   const filteredArticles = filter(articlePosts);
 
-  return (
-    <main style={{ background: '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>
+  const filterKeys: { key: 'all' | 'official' | 'article'; label: string }[] = [
+    { key: 'all',     label: 'All' },
+    { key: 'official', label: 'Official' },
+    { key: 'article',  label: 'Articles' },
+  ];
 
-        {/* Top bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+  return (
+    <main style={{ ...pageWrap }}>
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+
+        {/* Page header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div>
-            <span style={{ fontWeight: 700, fontSize: 18, color: '#1e293b' }}>Makoto 誠</span>
-            <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 10 }}>Transparency &amp; Knowledge Sharing</span>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: colors.primaryLight, color: colors.primary,
+              fontSize: 11, fontWeight: 700, padding: '3px 10px',
+              borderRadius: radius.pill, marginBottom: 8,
+            }}>
+              誠 MAKOTO PILLAR
+            </div>
+            <h1 style={{ ...pageTitle, margin: 0 }}>Makoto 誠 — Transparency &amp; Knowledge</h1>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search articles..."
               style={{
-                padding: '6px 12px', fontSize: 13, border: '1px solid #e2e8f0',
-                borderRadius: 6, outline: 'none', width: 180,
+                padding: '7px 12px', borderRadius: radius.input,
+                border: `1px solid ${colors.border}`, fontSize: 12,
+                color: colors.textBody, outline: 'none', width: 180,
               }}
             />
-            {(['all', 'official', 'article'] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => setTypeFilter(t)}
-                style={{
-                  padding: '5px 12px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
-                  border: '1px solid',
-                  borderColor: typeFilter === t ? '#0ea5a0' : '#e2e8f0',
-                  background: typeFilter === t ? '#f0fdfb' : '#fff',
-                  color: typeFilter === t ? '#0ea5a0' : '#64748b',
-                  fontWeight: typeFilter === t ? 600 : 400,
-                }}
-              >
-                {t === 'all' ? 'All' : t === 'official' ? 'Official' : 'Articles'}
-              </button>
-            ))}
-            <Link to="/makoto/new" style={{
-              padding: '5px 14px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
-              border: 'none', background: '#0ea5a0', color: '#fff',
-              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-            }}>
+            <Link to="/makoto/new" style={{ ...primaryButton, textDecoration: 'none', display: 'inline-flex' }}>
               + New Article
             </Link>
           </div>
         </div>
 
+        {/* Type filter pills */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          {filterKeys.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTypeFilter(key)}
+              style={{
+                padding: '5px 14px', borderRadius: radius.pill, fontSize: 12, fontWeight: 600,
+                border: 'none', cursor: 'pointer',
+                background: typeFilter === key ? colors.primary : colors.cardBg,
+                color:      typeFilter === key ? '#fff'          : colors.textSecondary,
+                boxShadow:  typeFilter === key ? 'none'          : `0 0 0 1px ${colors.border}`,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Official announcements */}
         {typeFilter !== 'article' && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>
               📌 Official Announcements
             </div>
-            {officialError && <div style={{ color: '#dc2626', fontSize: 13 }}>Failed to load official posts.</div>}
+            {officialError && <div style={{ color: colors.danger, fontSize: 13 }}>Failed to load official posts.</div>}
             {filteredOfficial.length === 0 && !officialError && (
-              <div style={{ fontSize: 13, color: '#94a3b8', padding: '12px 0' }}>No official announcements yet.</div>
+              <div style={{ fontSize: 13, color: colors.textMuted, padding: '12px 0' }}>No official announcements yet.</div>
             )}
             {filteredOfficial.map(p => <PostCard key={p.id} post={p} />)}
           </div>
         )}
 
         {/* Divider */}
-        {typeFilter === 'all' && <div style={{ borderTop: '1px solid #e2e8f0', marginBottom: 20 }} />}
+        {typeFilter === 'all' && <div style={{ borderTop: `1px solid ${colors.border}`, marginBottom: 20 }} />}
 
         {/* Employee articles */}
         {typeFilter !== 'official' && (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>
               📝 Knowledge Base
             </div>
-            {articleError && <div style={{ color: '#dc2626', fontSize: 13 }}>Failed to load articles.</div>}
+            {articleError && <div style={{ color: colors.danger, fontSize: 13 }}>Failed to load articles.</div>}
             {filteredArticles.length === 0 && !articleError && (
-              <div style={{ fontSize: 13, color: '#94a3b8', padding: '12px 0' }}>No articles yet. Be the first to share!</div>
+              <div style={{ fontSize: 13, color: colors.textMuted, padding: '12px 0' }}>No articles yet. Be the first to share!</div>
             )}
             {filteredArticles.map(p => <PostCard key={p.id} post={p} />)}
           </div>

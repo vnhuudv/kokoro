@@ -1,8 +1,9 @@
 // code/src/web/dashboard/src/pages/MakotoPost.tsx
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MAKOTO_BASE } from '../hooks/useDashboard';
 import { getToken } from '../hooks/useAuth';
+import { colors, card, pageWrap, pageTitle, radius, primaryButton, secondaryButton } from '../theme';
 
 const TENANT_ID = 'a0000000-0000-0000-0000-000000000001';
 const USER_ID = 'U-DASHBOARD-USER';
@@ -11,14 +12,6 @@ const POST_TYPES = [
   { value: 'article',  label: '📝 Article' },
   { value: 'official', label: '📌 Official Announcement' },
 ] as const;
-
-const card: React.CSSProperties = {
-  background: '#fff',
-  borderRadius: 8,
-  padding: '20px 24px',
-  boxShadow: '0 1px 3px rgba(0,0,0,.06)',
-  marginBottom: 16,
-};
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
@@ -29,20 +22,15 @@ const labelStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '10px 12px',
-  fontSize: 14,
-  color: '#1e293b',
-  border: '1px solid #e2e8f0',
-  borderRadius: 6,
-  outline: 'none',
-  background: '#fff',
+  display: 'block', width: '100%', marginTop: 6,
+  padding: '8px 12px', borderRadius: radius.input,
+  border: `1px solid ${colors.border}`, fontSize: 13,
+  boxSizing: 'border-box', fontFamily: 'inherit', color: colors.textBody,
 };
 
 const errorStyle: React.CSSProperties = {
   fontSize: 12,
-  color: '#dc2626',
+  color: colors.danger,
   marginTop: 4,
 };
 
@@ -117,18 +105,24 @@ export function MakotoPost() {
   }
 
   return (
-    <main style={{ background: '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 40px' }}>
+    <main style={{ ...pageWrap }}>
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
 
         <div style={{ marginBottom: 28 }}>
-          <h1 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700, color: '#1e293b' }}>
-            誠 New Post
-          </h1>
-          <div style={{ fontSize: 14, color: '#94a3b8' }}>Share knowledge or publish an official announcement</div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: colors.primaryLight, color: colors.primary,
+            fontSize: 11, fontWeight: 700, padding: '3px 10px',
+            borderRadius: radius.pill, marginBottom: 8,
+          }}>
+            誠 MAKOTO PILLAR
+          </div>
+          <h1 style={{ ...pageTitle, margin: 0 }}>New Post</h1>
+          <div style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>Share knowledge or publish an official announcement</div>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
-          <div style={card}>
+          <div style={{ ...card, maxWidth: 600, margin: '0 auto' }}>
 
             {/* Post type pills */}
             <div style={{ marginBottom: 20 }}>
@@ -140,15 +134,11 @@ export function MakotoPost() {
                     type="button"
                     onClick={() => setPostType(pt.value)}
                     style={{
-                      padding: '6px 16px',
-                      borderRadius: 20,
-                      border: '1px solid',
-                      borderColor: postType === pt.value ? '#0ea5a0' : '#e2e8f0',
-                      background: postType === pt.value ? '#f0fdfc' : '#fff',
-                      color: postType === pt.value ? '#0ea5a0' : '#64748b',
-                      fontWeight: postType === pt.value ? 600 : 400,
-                      fontSize: 13,
-                      cursor: 'pointer',
+                      padding: '7px 20px', borderRadius: radius.pill, fontSize: 13, fontWeight: 600,
+                      border: 'none', cursor: 'pointer',
+                      background: postType === pt.value ? colors.primary : colors.canvasBg,
+                      color:      postType === pt.value ? '#fff'          : colors.textSecondary,
+                      boxShadow:  postType === pt.value ? 'none'          : `0 0 0 1px ${colors.border}`,
                     }}
                   >
                     {pt.label}
@@ -165,7 +155,7 @@ export function MakotoPost() {
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                style={{ ...inputStyle, borderColor: titleError ? '#dc2626' : '#e2e8f0' }}
+                style={{ ...inputStyle, borderColor: titleError ? colors.danger : colors.border }}
                 placeholder="Give your post a clear title"
               />
               {titleError && <div style={errorStyle}>{titleError}</div>}
@@ -179,7 +169,7 @@ export function MakotoPost() {
                 value={body}
                 onChange={e => setBody(e.target.value)}
                 rows={8}
-                style={{ ...inputStyle, resize: 'vertical', borderColor: bodyError ? '#dc2626' : '#e2e8f0' }}
+                style={{ ...inputStyle, resize: 'vertical', borderColor: bodyError ? colors.danger : colors.border }}
                 placeholder={postType === 'official'
                   ? 'Write the announcement…'
                   : 'Share your knowledge, experience, or insight…'}
@@ -201,7 +191,7 @@ export function MakotoPost() {
                   style={inputStyle}
                   placeholder="e.g. en_score, carbon (comma-separated)"
                 />
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
                   Valid keys: en_score, carbon
                 </div>
               </div>
@@ -210,19 +200,20 @@ export function MakotoPost() {
           </div>
 
           {apiError && (
-            <div style={{ ...card, borderLeft: '4px solid #dc2626', color: '#dc2626', fontSize: 14, padding: '12px 16px' }}>
+            <div style={{
+              ...card, maxWidth: 600, margin: '12px auto 0',
+              borderLeft: `4px solid ${colors.danger}`,
+              color: colors.danger, fontSize: 14, padding: '12px 16px',
+            }}>
               {apiError}
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', maxWidth: 600, margin: '16px auto 0' }}>
             <button
               type="button"
               onClick={() => navigate('/makoto')}
-              style={{
-                padding: '10px 20px', borderRadius: 6, border: '1px solid #e2e8f0',
-                background: '#f1f5f9', color: '#334155', fontSize: 14, fontWeight: 500, cursor: 'pointer',
-              }}
+              style={{ ...secondaryButton }}
             >
               Cancel
             </button>
@@ -230,9 +221,8 @@ export function MakotoPost() {
               type="submit"
               disabled={submitting}
               style={{
-                padding: '10px 24px', borderRadius: 6, border: 'none',
-                background: submitting ? '#7dd3cf' : '#0ea5a0',
-                color: '#fff', fontSize: 14, fontWeight: 600,
+                ...primaryButton,
+                background: submitting ? colors.primaryRing : colors.primary,
                 cursor: submitting ? 'not-allowed' : 'pointer',
               }}
             >
