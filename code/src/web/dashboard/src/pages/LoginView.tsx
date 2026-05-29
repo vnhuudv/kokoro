@@ -18,7 +18,7 @@ export function LoginView() {
     }}>
       {/* Card */}
       <div style={{
-        background:    '#fff',
+        background:    colors.cardBg,
         borderRadius:  radius.card + 4,
         padding:       '48px 52px',
         boxShadow:     shadow.modal,
