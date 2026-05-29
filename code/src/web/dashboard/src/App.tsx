@@ -19,16 +19,18 @@ function AuthLayout() {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return (
-    <>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Nav />
-      <Outlet />
-    </>
+      <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+        <Outlet />
+      </div>
+    </div>
   );
 }
 
 export default function App() {
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       <Routes>
         <Route path="/login"         element={<LoginView />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
