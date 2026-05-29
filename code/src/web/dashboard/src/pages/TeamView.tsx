@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useFetch } from '../hooks/useDashboard';
-import { colors, card, pageWrap, pageTitle, labelStyle, primaryButton, secondaryButton, shadow, radius } from '../theme';
+import { colors, card, pageWrap, pageTitle, labelStyle, primaryButton, secondaryButton, radius } from '../theme';
 
 interface TeamMetrics {
   miscomm_rate:       { current: number; baseline: number; delta: number };
@@ -42,9 +42,6 @@ export function TeamView() {
   const { data: trend,   loading: tl } = useFetch<TrendPoint[]>('/trend');
   const { data: cases,   loading: cl } = useFetch<Case[]>('/cases');
   const [expandedCase, setExpandedCase] = useState<string | null>(null);
-
-  // shadow is imported for potential future use
-  void shadow;
 
   if (ml || tl || cl) {
     return <div style={{ ...pageWrap, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
